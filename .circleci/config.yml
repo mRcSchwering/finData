@@ -1,0 +1,9 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: python:2.7-slim
+    steps:
+      - checkout
+      - run: echo "A first hello"
+
