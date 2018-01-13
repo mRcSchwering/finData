@@ -5,5 +5,22 @@ jobs:
       - image: python:2.7-slim
     steps:
       - checkout
-      - run: echo "A first hello"
-
+      - run: echo "trying out pip install"
+      - run: pip install -r requirements.txt
+      - run: echo "succeeded"
+  test:
+    docker:
+      - image: python:2.7-slim
+    steps:
+      - checkout
+      - run: echo "trying out pip install"
+      - run: pip install -r requirements.txt
+      - run: echo "showing pwd"
+      - run: pwd
+      - run: ls
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test
