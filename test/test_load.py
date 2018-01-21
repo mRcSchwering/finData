@@ -25,6 +25,15 @@ class load_finData(unittest.TestCase):
         with self.assertRaises(UserWarning):
             finData.load.htmlTab2dict(soup, hasRownames=False, removeEmpty=False)
 
+    def test_FundamentalTables(self):
+        url_chr = 'https://www.boerse.de/fundamental-analyse/Adidas-Aktie/DE000A1EWWW0'
+        res = finData.load.FundamentalTables(url_chr, ids = ['guv'], texts = ['Marktkapitalisierung'])
+        self.assertEqual(len(res['marktk']['colnames']), 9)
+        self.assertEqual(res['marktk']['rownames'], ['Anzahl der Aktien', 'Marktkapitalisierung'])
+        idx16 = [i for (i, y) in enumerate(res['marktk']['colnames']) if y == '2016']
+        self.assertEqual(map(lambda x: x[idx16[0]], res['marktk']['data']), ['201,49', '30.253,57'])
+        self.assertEqual(map(lambda x: x[idx16[0]], res['guv']['data']), ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
+
 
 if __name__ == '__main__':
     unittest.main()

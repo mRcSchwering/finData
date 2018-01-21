@@ -63,6 +63,8 @@ def scrapeWikiTable(url_chr, class_chr="wikitable sortable"):
     return {"head": header, "body": body}
 
 
+
+
 # testStock = {
 #     'Name': 'Addidas AG',
 #     'Typ': 'Aktie',
@@ -79,7 +81,10 @@ def scrapeWikiTable(url_chr, class_chr="wikitable sortable"):
 #url_chr = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathFund'], testStock['boerseURL'])
 
 
+
+
 def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
+    """Return dict of lists from html table string"""
     rows = tab.findAll('tr')
     rownamesIdx = 0 if hasRownames else -1
     colnamesIdx = 0 if hasColnames else -1
@@ -119,14 +124,12 @@ def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
     return out
 
 
-import unittest
-
-
 
 
 def FundamentalTables(url_chr,
                    ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
                    texts = ['Marktkapitalisierung']):
+    """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
     tabDict = {}
     soup = BeautifulSoup(urllib2.urlopen(url_chr), "lxml")
     for id in ids:
@@ -135,7 +138,7 @@ def FundamentalTables(url_chr,
     for text in texts:
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
         tabDict[text.lower()[:6]] = h3.findNext('table')
-    return tabDict
+
     out = {}
     for key, tab in tabDict.iteritems():
         out[key] = htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
