@@ -1,7 +1,7 @@
 import unittest
 import finData.load
 
-class load_finData(unittest.TestCase):
+class scraping(unittest.TestCase):
 
     def setUp(self):
         pass
@@ -33,6 +33,16 @@ class load_finData(unittest.TestCase):
         idx16 = [i for (i, y) in enumerate(res['marktk']['colnames']) if y == '2016']
         self.assertEqual(map(lambda x: x[idx16[0]], res['marktk']['data']), ['201,49', '30.253,57'])
         self.assertEqual(map(lambda x: x[idx16[0]], res['guv']['data']), ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
+
+    def test_DividendTable(self):
+        url_chr = 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0'
+        res = finData.load.DividendTable(tab, url_chr)
+        self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Ver\xc3\xa4nderung', 'Rendite'])
+        idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d == '13.05.16']
+        self.assertEqual(res['data'][idx16], ['13.05.16', '1,60', '6,67%', '1,07%'])
+        with self.assertRaises(KeyError):
+            res['rownames']
+
 
 
 if __name__ == '__main__':

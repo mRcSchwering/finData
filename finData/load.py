@@ -75,10 +75,11 @@ def scrapeWikiTable(url_chr, class_chr="wikitable sortable"):
 # }
 # boerseDe = {
 #     'host': 'www.boerse.de',
-#     'pathFund': 'fundamental-analyse'
+#     'pathFund': 'fundamental-analyse',
+#     'pathDivid': 'dividenden'
 # }
-
-#url_chr = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathFund'], testStock['boerseURL'])
+#
+# url_chr = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathDivid'], testStock['boerseURL'])
 
 
 
@@ -110,7 +111,8 @@ def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
 
     if hasColnames:
         colnames = []
-        for col in rows[colnamesIdx].findAll('td')[1:]:
+        tag = 'th' if len(rows[colnamesIdx].findAll('th')) > 0 else 'td'
+        for col in rows[colnamesIdx].findAll(tag)[(rownamesIdx+1):]:
             text = col.text.replace(u'\xa0', u' ').encode('utf-8').strip()
             colnames.append(text)
         out['colnames'] = colnames
@@ -127,8 +129,8 @@ def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
 
 
 def FundamentalTables(url_chr,
-                   ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
-                   texts = ['Marktkapitalisierung']):
+                      ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
+                      texts = ['Marktkapitalisierung']):
     """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
     tabDict = {}
     soup = BeautifulSoup(urllib2.urlopen(url_chr), "lxml")
@@ -147,7 +149,15 @@ def FundamentalTables(url_chr,
 
 
 
+def DividendTable(url_chr, text='Dividenden'):
+    soup = BeautifulSoup(urllib2.urlopen(url_chr))
+    h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
+    tab = h3.findNext('table')
+    return htmlTab2dict(tab, hasRownames=False)
+
+
+
+
 
 def main():
-    dax = "https://en.wikipedia.org/wiki/DAX"
-    return scrapeWikiTable(dax)
+    pass
