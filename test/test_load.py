@@ -36,7 +36,7 @@ class scraping(unittest.TestCase):
 
     def test_DividendTable(self):
         url_chr = 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0'
-        res = finData.load.DividendTable(tab, url_chr)
+        res = finData.load.DividendTable(url_chr)
         self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Ver\xc3\xa4nderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d == '13.05.16']
         self.assertEqual(res['data'][idx16], ['13.05.16', '1,60', '6,67%', '1,07%'])
