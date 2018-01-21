@@ -10,6 +10,7 @@ class load_finData(unittest.TestCase):
         pass
 
     def test_htmlTab2dict(self):
+        from bs4 import BeautifulSoup
         htmlTable = (u'<table><tbody>' +
                 u'<tr><td>&nbsp;</td><td>2008</td><td>2009</td><td>2010</td><td>2011</td><td>2012</td></tr>' +
                 u'<tr><td>Personal am Jahresende</td><td>38.982</td><td>39.596</td><td>42.541</td><td>46.824</td><td>46.306</td></tr>' +
