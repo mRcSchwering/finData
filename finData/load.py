@@ -65,26 +65,11 @@ def scrapeWikiTable(url_chr, class_chr="wikitable sortable"):
 
 
 
-# testStock = {
-#     'Name': 'Addidas AG',
-#     'Typ': 'Aktie',
-#     'WKN': 'A1EWWW',
-#     'ISIN': 'DE000A1EWWW0',
-#     'yahooTicker': 'ADS.DE',
-#     'boerseURL': 'Adidas-Aktie/DE000A1EWWW0'
-# }
-# boerseDe = {
-#     'host': 'www.boerse.de',
-#     'pathFund': 'fundamental-analyse',
-#     'pathDivid': 'dividenden'
-# }
-#
-# url_chr = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathDivid'], testStock['boerseURL'])
-
-
-
-
-def htmlTab2dict(tab, hasRownames = True, hasColnames = True, removeEmpty = True):
+def htmlTab2dict(tab,
+                 hasRownames = True,
+                 hasColnames = True,
+                 removeEmpty = True,
+                 checkTable = True):
     """Return dict of lists from html table string"""
     rows = tab.findAll('tr')
     rownamesIdx = 0 if hasRownames else -1
@@ -117,7 +102,7 @@ def htmlTab2dict(tab, hasRownames = True, hasColnames = True, removeEmpty = True
             colnames.append(text)
         out['colnames'] = colnames
 
-    if len(out['data']) > 1:
+    if checkTable and len(out['data']) > 1:
         lens = [len(row) for row in out['data']]
         diffs = map(lambda x: x[0] - x[1], zip(lens, lens[1:] + [lens[0]]))
         if not all(d == 0 for d in diffs):
@@ -136,10 +121,16 @@ def FundamentalTables(url_chr,
     soup = BeautifulSoup(urllib2.urlopen(url_chr), 'lxml')
     for id in ids:
         h3 = soup.find(lambda tag: tag.get('id') == id and tag.name == 'h3')
-        tabDict[id.lower()[:6]] = h3.findNext('table')
+        try:
+            tabDict[id.lower()[:6]] = h3.findNext('table')
+        except AttributeError:
+            print('Table %s was not found' % id)
     for text in texts:
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
-        tabDict[text.lower()[:6]] = h3.findNext('table')
+        try:
+            tabDict[text.lower()[:6]] = h3.findNext('table')
+        except AttributeError:
+            print('Table %s was not found' % text)
 
     out = {}
     for key, tab in tabDict.iteritems():
@@ -152,10 +143,46 @@ def FundamentalTables(url_chr,
 def DividendTable(url_chr, text = 'Dividenden'):
     soup = BeautifulSoup(urllib2.urlopen(url_chr), 'lxml')
     h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
-    tab = h3.findNext('table')
+    try:
+        tab = h3.findNext('table')
+    except AttributeError:
+        print('Table %s not found' % text)
     return htmlTab2dict(tab, hasRownames=False)
 
 
+
+
+def HistoricPrices(ticker,
+                   start = datetime.datetime(1990, 1, 1)):
+    """Download historic prices from yahoo! using ticker symbol"""
+    return pdr.get_data_yahoo(ticker, start=start)
+
+# testStock = [
+#     {
+#         'Name': 'Addidas AG',
+#         'Typ': 'Aktie',
+#         'WKN': 'A1EWWW',
+#         'ISIN': 'DE000A1EWWW0',
+#         'yahooTicker': 'ADS.DE',
+#         'boerseURL': 'Adidas-Aktie/DE000A1EWWW0'
+#     },
+#     {
+#         'Name': 'BB Biotech',
+#         'Typ': 'Aktie',
+#         'WKN': 'A0NFN3',
+#         'ISIN': 'CH0038389992',
+#         'yahooTicker': 'BBZA.DE',
+#         'boerseURL': 'BB-Biotech-Aktie/CH0038389992'
+#     }
+# ]
+# boerseDe = {
+#     'host': 'www.boerse.de',
+#     'pathFund': 'fundamental-analyse',
+#     'pathDivid': 'dividenden'
+# }
+#
+# Fund_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathFund'], testStock[1]['boerseURL'])
+# Divid_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathDivid'], testStock[1]['boerseURL'])
 
 
 

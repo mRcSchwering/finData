@@ -1,7 +1,7 @@
 import unittest
 import finData.load
 
-class scraping_functions(unittest.TestCase):
+class scraping_boerse(unittest.TestCase):
 
     def setUp(self):
         pass
@@ -33,6 +33,9 @@ class scraping_functions(unittest.TestCase):
         idx16 = [i for (i, y) in enumerate(res['marktk']['colnames']) if y == '2016']
         self.assertEqual(map(lambda x: x[idx16[0]], res['marktk']['data']), ['201,49', '30.253,57'])
         self.assertEqual(map(lambda x: x[idx16[0]], res['guv']['data']), ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
+        url_chr = 'https://www.boerse.de/fundamental-analyse/BB-Biotech-Aktie/CH0038389992'
+        res = finData.load.FundamentalTables(url_chr, ids = ['guv'], texts = [])
+        self.assertEqual(res, {'guv': {'colnames': [], 'data': [], 'rownames': []}})
 
     def test_DividendTable(self):
         url_chr = 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0'
@@ -44,6 +47,18 @@ class scraping_functions(unittest.TestCase):
             res['rownames']
 
 
+class yahoo_api(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_HistoricPrices(self):
+        res = findData.load.HistoricPrices('ADS.DE')
+        self.assertEqual(res.keys(), Index([u'Open', u'High', u'Low', u'Close', u'Adj Close', u'Volume'], dtype='object'))
+        self.assertEqual(res['Close']['2018-01-02'], 167.149)
 
 if __name__ == '__main__':
     unittest.main()
