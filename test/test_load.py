@@ -22,8 +22,8 @@ class load_finData(unittest.TestCase):
         self.assertEqual(res['colnames'], ['2008', '2009', '2010', '2011', '2012'])
         self.assertEqual(res['rownames'], ['Personal am Jahresende', 'Gewinn je Mitarbeiter'])
         self.assertEqual(res['data'][0], ['38.982', '39.596', '42.541', '46.824', '46.306'])
-        self.assertRaises(ValueError, finData.load.htmlTab2dict(soup, hasRownames=False, removeEmpty=False))
-        #res2 = finData.load.htmlTab2dict(soup, hasRownames=False, removeEmpty=False)
+        with self.assertRaises(UserWarning):
+            finData.load.htmlTab2dict(soup, hasRownames=False, removeEmpty=False)
 
 
 if __name__ == '__main__':

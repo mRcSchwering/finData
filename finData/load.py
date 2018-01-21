@@ -114,7 +114,7 @@ def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
         lens = [len(row) for row in out['data']]
         diffs = map(lambda x: x[0] - x[1], zip(lens, lens[1:] + [lens[0]]))
         if not all(d == 0 for d in diffs):
-            raise ValueError('Data rows do not all have the same lengths')
+            raise UserWarning('Data rows do not all have the same lengths')
 
     return out
 
