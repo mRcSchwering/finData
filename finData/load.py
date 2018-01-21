@@ -84,7 +84,7 @@ def scrapeWikiTable(url_chr, class_chr="wikitable sortable"):
 
 
 
-def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
+def htmlTab2dict(tab, hasRownames = True, hasColnames = True, removeEmpty = True):
     """Return dict of lists from html table string"""
     rows = tab.findAll('tr')
     rownamesIdx = 0 if hasRownames else -1
@@ -133,7 +133,7 @@ def FundamentalTables(url_chr,
                       texts = ['Marktkapitalisierung']):
     """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
     tabDict = {}
-    soup = BeautifulSoup(urllib2.urlopen(url_chr), "lxml")
+    soup = BeautifulSoup(urllib2.urlopen(url_chr), 'lxml')
     for id in ids:
         h3 = soup.find(lambda tag: tag.get('id') == id and tag.name == 'h3')
         tabDict[id.lower()[:6]] = h3.findNext('table')
@@ -149,8 +149,8 @@ def FundamentalTables(url_chr,
 
 
 
-def DividendTable(url_chr, text='Dividenden'):
-    soup = BeautifulSoup(urllib2.urlopen(url_chr))
+def DividendTable(url_chr, text = 'Dividenden'):
+    soup = BeautifulSoup(urllib2.urlopen(url_chr), 'lxml')
     h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
     tab = h3.findNext('table')
     return htmlTab2dict(tab, hasRownames=False)
