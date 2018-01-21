@@ -119,6 +119,9 @@ def htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True):
     return out
 
 
+import unittest
+
+
 
 
 def FundamentalTables(url_chr,
