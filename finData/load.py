@@ -103,7 +103,7 @@ def DividendTable(url_chr, text = 'Dividenden'):
 def HistoricPrices(ticker,
                    start = datetime.datetime(1990, 1, 1)):
     """Download historic prices from yahoo! using ticker symbol"""
-    # könnte man auch scrapen (aber dann ohne adjusted Prices)
+    # koennte man auch scrapen (aber dann ohne adjusted Prices)
     # Bsp: https://www.boerse.de/historische-kurse/BB-Biotech-Aktie/CH0038389992_seite,231,anzahl,20
     return pdr.get_data_yahoo(ticker, start=start)
 
