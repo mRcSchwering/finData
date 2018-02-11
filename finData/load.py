@@ -6,7 +6,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import pandas_datareader as pdr
+import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
+import pandas_datareader.data as web # usable DataReader ???
+
 import datetime
 import urllib2
 from bs4 import BeautifulSoup
@@ -98,14 +100,13 @@ def DividendTable(url_chr, text = 'Dividenden'):
     return htmlTab2dict(tab, hasRownames=False)
 
 
-
-
 def HistoricPrices(ticker,
                    start = datetime.datetime(1990, 1, 1)):
     """Download historic prices from yahoo! using ticker symbol"""
     # koennte man auch scrapen (aber dann ohne adjusted Prices)
     # Bsp: https://www.boerse.de/historische-kurse/BB-Biotech-Aktie/CH0038389992_seite,231,anzahl,20
-    return pdr.get_data_yahoo(ticker, start=start)
+    #return pdr.get_data_yahoo(ticker, start=start)
+    return web.DataReader(ticker, "yahoo", start=start)
 
 # testStock = [
 #     {
