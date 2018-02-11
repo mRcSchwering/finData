@@ -56,7 +56,7 @@ class yahoo_api(unittest.TestCase):
         pass
 
     def test_HistoricPrices(self):
-        res = findData.load.HistoricPrices('ADS.DE')
+        res = finData.load.HistoricPrices('ADS.DE')
         self.assertEqual(res.keys(), Index([u'Open', u'High', u'Low', u'Close', u'Adj Close', u'Volume'], dtype='object'))
         self.assertEqual(res['Close']['2018-01-02'], 167.149)
 
