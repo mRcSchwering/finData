@@ -2,7 +2,7 @@ version: 1
 jobs:
   build:
     docker:
-      - image: python:2.7-slim
+      - image: python:3.5-slim
     steps:
       - checkout
       - run: pip install -r requirements.txt

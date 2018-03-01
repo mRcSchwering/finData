@@ -1,5 +1,4 @@
 lxml
 pandas_datareader
-tiingo
 datetime
 bs4

@@ -8,7 +8,7 @@ from __future__ import print_function
 
 #import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
 #import pandas_datareader.data as web # usable DataReader ???
-from tiingo import TiingoClient # useful??
+#from tiingo import TiingoClient # useful??: No!
 
 import datetime
 import urllib2
@@ -104,8 +104,7 @@ def DividendTable(url_chr, text = 'Dividenden'):
 
 
 
-# TODO
-#  eigene API bauen!!
+# TODO eigene API bauen!!
 
 ticker = "ADS"
 start = datetime.datetime(1990, 1, 1)
