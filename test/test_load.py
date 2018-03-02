@@ -21,7 +21,7 @@ class scraping_boerse(unittest.TestCase):
         idx16 = [i for (i, y) in enumerate(res['marktk']['colnames']) if y.decode() == '2016']
         decoded = [x.decode() for x in list(map(lambda x: x[idx16[0]], res['marktk']['data']))]
         self.assertEqual(decoded, ['201,49', '30.253,57'])
-        decoded = [x.decoded() for x in list(map(lambda x: x[idx16[0]], res['guv']['data']))]
+        decoded = [x.decode() for x in list(map(lambda x: x[idx16[0]], res['guv']['data']))]
         self.assertEqual(decoded, ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
         self.assertEqual(self.b.fund_url, 'https://www.boerse.de/fundamental-analyse/BB-Biotech-Aktie/CH0038389992')
         self.b.getFundamentalTables()
@@ -31,7 +31,7 @@ class scraping_boerse(unittest.TestCase):
     def test_DividendTable(self):
         self.assertEqual(self.a.divid_url, 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0')
         res = self.a.getDividendTable(True)
-        decoded = [x.decoded() for x in res['colnames']]
+        decoded = [x.decode() for x in res['colnames']]
         self.assertEqual(decoded, ['Datum', 'Dividende', 'Ver\xc3\xa4nderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.decode() == '13.05.16']
         decoded = [x.decode() for x in res['data'][idx16[0]]]
