@@ -122,14 +122,6 @@ class Loader(object):
 
 
 
-
-
-
-
-
-
-
-
 # TODO eigene API bauen!!
 
 # ticker = "ADS"
