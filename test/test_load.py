@@ -16,10 +16,10 @@ class scraping_boerse(unittest.TestCase):
         self.assertEqual(self.a.fund_url, 'https://www.boerse.de/fundamental-analyse/Adidas-Aktie/DE000A1EWWW0')
         res = self.a.getFundamentalTables(True, ids = ['guv'], texts = ['Marktkapitalisierung'])
         self.assertEqual(len(res['marktk']['colnames']), 9)
-        self.assertEqual(res['marktk']['rownames'], ['Anzahl der Aktien', 'Marktkapitalisierung'])
+        self.assertEqual(res['marktk']['rownames'].decode(), ['Anzahl der Aktien', 'Marktkapitalisierung'])
         idx16 = [i for (i, y) in enumerate(res['marktk']['colnames']) if y.decode() == '2016']
-        self.assertEqual(list(map(lambda x: x[idx16[0]], res['marktk']['data'])), ['201,49', '30.253,57'])
-        self.assertEqual(list(map(lambda x: x[idx16[0]], res['guv']['data'])), ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
+        self.assertEqual(list(map(lambda x: x[idx16[0]], res['marktk']['data'])).decode(), ['201,49', '30.253,57'])
+        self.assertEqual(list(map(lambda x: x[idx16[0]], res['guv']['data'])).decode(), ['19.291', '9.379', '1.491', '1.444', '1.017', '403,00'])
         self.assertEqual(self.b.fund_url, 'https://www.boerse.de/fundamental-analyse/BB-Biotech-Aktie/CH0038389992')
         self.b.getFundamentalTables()
         self.assertEqual(self.b.fund_table, self.b.getFundamentalTables(True))
@@ -28,9 +28,9 @@ class scraping_boerse(unittest.TestCase):
     def test_DividendTable(self):
         self.assertEqual(self.a.divid_url, 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0')
         res = self.a.getDividendTable(True)
-        self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Ver\xc3\xa4nderung', 'Rendite'])
+        self.assertEqual(res['colnames'].decode(), ['Datum', 'Dividende', 'Ver\xc3\xa4nderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.decode() == '13.05.16']
-        self.assertEqual(res['data'][idx16[0]], ['13.05.16', '1,60', '6,67%', '1,07%'])
+        self.assertEqual(res['data'][idx16[0]].decode(), ['13.05.16', '1,60', '6,67%', '1,07%'])
         with self.assertRaises(KeyError):
             res['rownames']
         self.assertEqual(self.b.divid_url, 'https://www.boerse.de/dividenden/BB-Biotech-Aktie/CH0038389992')
