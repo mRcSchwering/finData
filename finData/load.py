@@ -9,6 +9,7 @@ Detailed Description
 
 import datetime
 import requests
+import re
 from bs4 import BeautifulSoup
 
 class Loader(object):
@@ -23,21 +24,64 @@ class Loader(object):
         self.wkn = str(wkn)
         self.isin = str(isin)
         self.boerse_name = str(boerse_name)
-        self.__resolve_boerse_urls()
+        self._resolve_boerse_urls()
 
 
-    def __resolve_boerse_urls(self):
+    def getFundamentalTables(self, returnTables = False,
+                             ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
+                             texts = ['Marktkapitalisierung']):
+        """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
+        tabDict = {}
+        soup = BeautifulSoup(requests.get(self.fund_url).content, 'lxml')
+        for id in ids:
+            h3 = soup.find(lambda tag: tag.get('id') == id and tag.name == 'h3')
+            try:
+                tabDict[id.lower()[:6]] = h3.findNext('table')
+            except AttributeError:
+                print('Table %s was not found' % id)
+        for text in texts:
+            h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
+            try:
+                tabDict[text.lower()[:6]] = h3.findNext('table')
+            except AttributeError:
+                print('Table %s was not found' % text)
+        out = {}
+        for key, tab in tabDict.items():
+            out[key] = self._htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
+        utab = self._decode(out)
+        self.fund_tables = self._guessTypes(utab)
+        if returnTables:
+            return self.fund_tables
+
+
+    def getDividendTable(self, returnTable = False,
+                         text = 'Dividenden'):
+        """Scrape dividend table from boerse.de given a h3 text search string"""
+        soup = BeautifulSoup(requests.get(self.divid_url).content, 'lxml')
+        h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
+        try:
+            tab = h3.findNext('table')
+        except AttributeError:
+            print('Table %s not found' % text)
+        btab = self._htmlTab2dict(tab, hasRownames=False)
+        utab = self._decode(btab)
+        self.divid_table = self._guessTypes(utab)
+        if returnTable:
+            return self.divid_table
+
+
+    def _resolve_boerse_urls(self):
         pre = 'https://' + Loader.host
         post = self.boerse_name + '/' + self.isin
         self.fund_url = '/'.join([pre, Loader.fund_route, post])
         self.divid_url = '/'.join([pre, Loader.divid_route, post])
 
 
-    def __htmlTab2dict(self, tab,
-                       hasRownames = True,
-                       hasColnames = True,
-                       removeEmpty = True,
-                       checkTable = True):
+    def _htmlTab2dict(self, tab,
+                      hasRownames = True,
+                      hasColnames = True,
+                      removeEmpty = True,
+                      checkTable = True):
         """Return dict of lists from html table string"""
         rows = tab.findAll('tr')
         rownamesIdx = 0 if hasRownames else -1
@@ -78,52 +122,61 @@ class Loader(object):
         return out
 
 
-    def getFundamentalTables(self, returnTable = False,
-                             ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
-                             texts = ['Marktkapitalisierung']):
-        """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
-        tabDict = {}
-        soup = BeautifulSoup(requests.get(self.fund_url).content, 'lxml')
-        for id in ids:
-            h3 = soup.find(lambda tag: tag.get('id') == id and tag.name == 'h3')
-            try:
-                tabDict[id.lower()[:6]] = h3.findNext('table')
-            except AttributeError:
-                print('Table %s was not found' % id)
-        for text in texts:
-            h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
-            try:
-                tabDict[text.lower()[:6]] = h3.findNext('table')
-            except AttributeError:
-                print('Table %s was not found' % text)
-        out = {}
-        for key, tab in tabDict.items():
-            out[key] = self.__htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
-        self.fund_table = out
-        if returnTable:
-            return out
+    def _decode(self, obj):
+        if isinstance(obj, dict):
+            for key in obj:
+                obj[key] = self._decode(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = self._decode(obj[i])
+        elif isinstance(obj, bytes):
+            obj = obj.decode()
+        return obj
 
 
-    def getDividendTable(self, returnTable = False,
-                         text = 'Dividenden'):
-        """Scrape dividend table from boerse.de given a h3 text search string"""
-        soup = BeautifulSoup(requests.get(self.divid_url).content, 'lxml')
-        h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
-        try:
-            tab = h3.findNext('table')
-        except AttributeError:
-            print('Table %s not found' % text)
-        self.divid_table = self.__htmlTab2dict(tab, hasRownames=False)
-        if returnTable:
-            return self.divid_table
+    def _guessTypes(self, obj,
+                    defStr = ['colnames', 'rownames'],
+                    defNaN = ['n.v.', '', '%', '-', '-%'],
+                    rePerc = '(^.*)%$',
+                    reNum = '^-?[0-9.]*,[0-9][0-9]?$',
+                    reDate = [{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$', 'fmt': '%d.%m.%y'}]):
+        identified = True
+        if isinstance(obj, dict):
+            for key in obj:
+                if key in defStr:
+                    obj[key] = [str(d) for d in obj[key]]
+                else:
+                    obj[key] = self._guessTypes(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = self._guessTypes(obj[i])
+        else:
+            if obj in defNaN:
+                obj = float('NaN')
+            elif re.search(rePerc, obj):
+                x = re.search(rePerc, obj).group(1).replace(',', '.')
+                x = x.replace(".", "", x.count(".") -1)
+                obj = float('NaN') if x in defNaN else float(x) / 100
+            elif re.search(reNum, obj):
+                x = obj.replace(',', '.')
+                x = x.replace(".", "", x.count(".") -1)
+                obj = float('NaN') if x in defNaN else float(x)
+            else:
+                pass
+                identified = False
+                for d in reDate:
+                    if re.search(d['re'], obj):
+                        obj = datetime.datetime.strptime(obj, d['fmt']).date()
+                        identified = True
+                        break
+            if not identified:
+                raise ValueError('Value not identified: ' + obj)
+        return obj
 
 
-
-
-
+# TODO get() für tables und listen welche tables es gibt
 
 # TODO eigene API bauen!!
-
 # ticker = "ADS"
 # start = datetime.datetime(1990, 1, 1)
 #
