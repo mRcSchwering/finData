@@ -1,5 +1,9 @@
 import unittest
 import finData.load
+import datetime
+import math
+
+
 
 
 class Test_getFundamentalTables(unittest.TestCase):
@@ -41,8 +45,8 @@ class Test_getFundamentalTables(unittest.TestCase):
         self.assertEqual(len(res), 1)
         self.assertEqual(len(res['bilanz']['colnames']), 9)
         idx16 = [i for (i, d) in enumerate(res['bilanz']['colnames']) if d == '2016']
-        idx16bilanz = list(map(lambda x: x[idx16[0]], res['bilanz']['data']))
-        self.assertEqual(idx16bilanz, [float('NaN'), float('NaN'), float('NaN')])
+        for d in map(lambda x: x[idx16[0]], res['bilanz']['data']):
+            self.assertTrue(math.isnan(d))
 
 
 
