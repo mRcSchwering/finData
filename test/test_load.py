@@ -77,7 +77,7 @@ class Test_getDividendTable(unittest.TestCase):
         res = self.a.getDividendTable(True)
         self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Veränderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.year == 2016]
-        self.assertEqual(res['data'][idx16[0]], datetime.date(2016, 5, 13))
+        self.assertEqual(res['data'][idx16[0]][0], datetime.date(2016, 5, 13))
         for d in res['data'][idx16[0]][1:]:
             self.assertAlmostEqual(d, [1.6, 0.0667, 0.0107])
         with self.assertRaises(KeyError):
@@ -88,8 +88,7 @@ class Test_getDividendTable(unittest.TestCase):
         res = self.b.getDividendTable(True)
         self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Veränderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.year == 2016]
-        self.assertAlmostEqual(res['data'][idx16[0]], [datetime.date(2016, 3, 21), 2.66, 0.209, 0.0516])
-        self.assertEqual(res['data'][idx16[0]], datetime.date(2016, 3, 21))
+        self.assertEqual(res['data'][idx16[0]][0], datetime.date(2016, 3, 21))
         for d in res['data'][idx16[0]][1:]:
             self.assertAlmostEqual(d, [2.66, 0.209, 0.0516])
         with self.assertRaises(KeyError):
