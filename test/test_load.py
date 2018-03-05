@@ -35,7 +35,7 @@ class Test_getFundamentalTables(unittest.TestCase):
         self.assertEqual(res['marktk']['rownames'], ['Anzahl der Aktien', 'Marktkapitalisierung'])
         idx16 = [i for (i, d) in enumerate(res['marktk']['colnames']) if d == '2016']
         idx16marktk = list(map(lambda x: x[idx16[0]], res['marktk']['data']))
-        self.assertEqual(idx16marktk, [201.49, 30253.57])
+        self.assertAlmostEqual(idx16marktk, [201.49, 30253.57])
         idx16guv = list(map(lambda x: x[idx16[0]], res['guv']['data']))
         self.assertEqual(idx16guv, [19291, 9379, 1491, 1444, 1017, 403])
 
@@ -77,7 +77,7 @@ class Test_getDividendTable(unittest.TestCase):
         res = self.a.getDividendTable(True)
         self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Veränderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.year == 2016]
-        self.assertEqual(res['data'][idx16[0]], [datetime.date(2016, 5, 13), 1.6, 0.0667, 0.0107])
+        self.assertAlmostEqual(res['data'][idx16[0]], [datetime.date(2016, 5, 13), 1.6, 0.0667, 0.0107])
         with self.assertRaises(KeyError):
             res['rownames']
 
@@ -86,7 +86,7 @@ class Test_getDividendTable(unittest.TestCase):
         res = self.b.getDividendTable(True)
         self.assertEqual(res['colnames'], ['Datum', 'Dividende', 'Veränderung', 'Rendite'])
         idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.year == 2016]
-        self.assertEqual(res['data'][idx16[0]], [datetime.date(2016, 3, 21), 2.66, 0.209, 0.0516])
+        self.assertAlmostEqual(res['data'][idx16[0]], [datetime.date(2016, 3, 21), 2.66, 0.209, 0.0516])
         with self.assertRaises(KeyError):
             res['rownames']
 
