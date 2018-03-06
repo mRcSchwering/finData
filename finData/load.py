@@ -7,15 +7,17 @@ Detailed Description
 #import pandas_datareader.data as web # usable DataReader ???
 #from tiingo import TiingoClient # useful??: No!
 
+import os
+import re
 import datetime
 import requests
-import re
 from bs4 import BeautifulSoup
 
 class Loader(object):
     host = 'www.boerse.de'
     fund_route = 'fundamental-analyse'
     divid_route = 'dividenden'
+    alphavantage_api = 'https://www.alphavantage.co/query'
 
 
     def __init__(self, name, typ, wkn, isin, boerse_name):
@@ -24,8 +26,9 @@ class Loader(object):
         self.wkn = str(wkn)
         self.isin = str(isin)
         self.boerse_name = str(boerse_name)
-        self._resolve_boerse_urls()
         self.existingTables = []
+        self._resolve_boerse_urls()
+        self.alphavantage_api_key = self._configure_api()
 
 
     def getFundamentalTables(self, returnTables = False,
@@ -91,6 +94,19 @@ class Loader(object):
         post = self.boerse_name + '/' + self.isin
         self.fund_url = '/'.join([pre, Loader.fund_route, post])
         self.divid_url = '/'.join([pre, Loader.divid_route, post])
+
+
+    def _configure_api(self):
+        key = ''
+        try:
+            key = os.environ['ALPHAVANTAGE_API_KEY']
+        except KeyError:
+            pass
+        try:
+            key = json.load(open('config.json'))['ALPHAVANTAGE_API_KEY']
+        except KeyError:
+            pass
+        return key
 
 
     def _htmlTab2dict(self, tab,
@@ -189,6 +205,69 @@ class Loader(object):
                 raise ValueError('Value not identified: ' + obj)
         return obj
 
+
+    def _alphavantage_api(self, query):
+        """Reference: www.alphavantage.co/documentation"""
+        if self.alphavantage_api_key == '':
+            raise KeyError('Alpha Vantage API Key not defined')
+        if not isinstance(query, dict):
+            raise TypeError('Provide query as dictionary of key: value')
+        paramsReq = ['function', 'symbol']
+        paramsOpt = ['outputsize', 'datatype', 'interval']
+        for param in paramsReq:
+            if not param in query.keys():
+                raise KeyError('Parameter required: %s' % param)
+        querystrings = ['apikey=%s' % self.alphavantage_api_key]
+        for key in query:
+            if key not in paramsOpt + paramsReq:
+                raise KeyError('Unused parameter: %s' % key)
+            querystrings.append('%s=%s' % (key, query[key]))
+        res = requests.get(Loader.alphavantage_api + '?' + '&'.join(querystrings))
+        if res.status_code != 200:
+            raise ValueError('Alpha Vantage returned: %s' % res.status_code)
+        return res
+
+
+    def _convert_alphavantage(self, data,
+                              dateFmt = '%Y-%m-%d'):
+        content = json.loads(data.content.decode())['Time Series (Daily)']
+        dates = list(content.keys())
+        try:
+            datetime.datetime.strptime(dates[0], dateFmt)
+        except ValueError:
+            raise ValueError('Unexpected date structure')
+        rownames = [datetime.datetime.strptime(d, dateFmt) for d in dates]
+        colnames = list(content[dates[0]].keys())
+        rows = []
+        for row in content:
+            rows.append([float(row[k]) for k in row])
+        return {'rownames': rownames, 'colnames': colnames, 'data': data}
+
+
+    def getHistoricPrices(self, ticker, returnTable = False):
+        query = {
+            'function': 'TIME_SERIES_DAILY',
+            'symbol': ticker,
+            'outputsize': 'full'
+        }
+        res = self._alphavantage_api(query)
+        res = json.loads(res.content.decode())['Time Series (Daily)']
+        self.hist_table = self._convert_alphavantage(res)
+        self.existingTables.append('hist')
+        if returnTable:
+            return self.hist_table
+
+
+
+a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie')
+a.getDividendTable()
+a.getFundamentalTables()
+x = a.getHistoricPrices('ADS.DE')
+x.status_code
+y = json.loads(x.content.decode())
+y.keys()
+yy = y['Time Series (Daily)']
+y['Meta Data']
 
 # TODO get() für tables und listen welche tables es gibt
 

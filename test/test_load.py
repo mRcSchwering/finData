@@ -105,11 +105,6 @@ class yahoo_api(unittest.TestCase):
 
 
     def setUp(self):
-        import os
-        import requests
-        key = os.environ['ALPHAVANTAGE_API_KEY']
-        res = requests.get('https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=ADS.DE&apikey=%s&outputsize=compact' % key)
-        print(res.content)
         pass
 
 
