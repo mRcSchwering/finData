@@ -132,7 +132,7 @@ class Test_get(unittest.TestCase):
         pass
 
 
-    def generic(self):
+    def test_general(self):
         with self.assertRaises(ValueError):
             self.a.get('asd')
         with self.assertRaises(ValueError):

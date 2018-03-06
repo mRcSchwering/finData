@@ -3,7 +3,7 @@
 Detailed Description
 """
 
-#import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
+import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
 #import pandas_datareader.data as web # usable DataReader ???
 #from tiingo import TiingoClient # useful??: No!
 
@@ -199,10 +199,16 @@ class Loader(object):
 # def HistoricPrices(ticker,
 #                    start = datetime.datetime(1990, 1, 1)):
 #     """Download historic prices from yahoo! using ticker symbol"""
-    # koennte man auch scrapen (aber dann ohne adjusted Prices)
-    # Bsp: https://www.boerse.de/historische-kurse/BB-Biotech-Aktie/CH0038389992_seite,231,anzahl,20
-    #return pdr.get_data_yahoo(ticker, start=start)
-    #return web.DataReader(ticker, "yahoo", start=start)
+#     # koennte man auch scrapen (aber dann ohne adjusted Prices)
+#     # Bsp: https://www.boerse.de/historische-kurse/BB-Biotech-Aktie/CH0038389992_seite,231,anzahl,20
+#     return pdr.get_data_yahoo(ticker, start=start)
+#     #return web.DataReader(ticker, "yahoo", start=start)
+#
+# x = pdr.get_data_yahoo(ticker, start=start)
+#
+# 'https://www.investopedia.com/markets/api/partial/historical/?Symbol=HMSF.L&Type=Historical+Prices&Timeframe=Daily&StartDate=Jan+10%2C+2018'
+# 'https://www.investopedia.com/markets/api/partial/historical/?Symbol=ADS.DE&Type=Historical+Prices&Timeframe=Daily&StartDate=Jan+10%2C+2018'
+# x
 
 # testStock = [
 #     {
