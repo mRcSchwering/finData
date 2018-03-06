@@ -3,7 +3,7 @@
 Detailed Description
 """
 
-import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
+#import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
 #import pandas_datareader.data as web # usable DataReader ???
 #from tiingo import TiingoClient # useful??: No!
 
@@ -236,6 +236,7 @@ class Loader(object):
 #
 # Fund_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathFund'], testStock[1]['boerseURL'])
 # Divid_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathDivid'], testStock[1]['boerseURL'])
+
 
 
 
