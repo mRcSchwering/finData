@@ -25,6 +25,7 @@ class Loader(object):
         self.isin = str(isin)
         self.boerse_name = str(boerse_name)
         self._resolve_boerse_urls()
+        self.existingTables = []
 
 
     def getFundamentalTables(self, returnTables = False,
@@ -50,6 +51,7 @@ class Loader(object):
             out[key] = self._htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
         utab = self._decode(out)
         self.fund_tables = self._guessTypes(utab)
+        self.existingTables.extend(self.fund_tables.keys())
         if returnTables:
             return self.fund_tables
 
@@ -66,8 +68,22 @@ class Loader(object):
         btab = self._htmlTab2dict(tab, hasRownames=False)
         utab = self._decode(btab)
         self.divid_table = self._guessTypes(utab)
+        self.existingTables.append('divid')
         if returnTable:
             return self.divid_table
+
+
+    def get(self, key):
+        keys = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
+        if key not in keys:
+            raise ValueError('Invalid key, expect one of: %s' % keys)
+        if key not in self.existingTables:
+            raise ValueError('No data exists for this key, existing data: %s' % self.existingTables)
+        if key == 'divid':
+            return self.divid_table
+        if key == 'hist':
+            return self.hist_table
+        return self.fund_tables[key]
 
 
     def _resolve_boerse_urls(self):

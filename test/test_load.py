@@ -103,17 +103,44 @@ class Test_getDividendTable(unittest.TestCase):
 
 class yahoo_api(unittest.TestCase):
 
+
     def setUp(self):
         pass
 
+
     def tearDown(self):
         pass
+
 
     def test_HistoricPrices(self):
         # res = finData.load.HistoricPrices('ADS.DE')
         # self.assertEqual(res.keys(), Index([u'Open', u'High', u'Low', u'Close', u'Adj Close', u'Volume'], dtype='object'))
         # self.assertEqual(res['Close']['2018-01-02'], 167.149)
         pass
+
+
+
+
+class Test_get(unittest.TestCase):
+
+
+    def setUp(self):
+        self.a = finData.load.Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie')
+
+
+    def tearDown(self):
+        pass
+
+
+    def generic(self):
+        with self.assertRaises(ValueError):
+            self.a.get('asd')
+        with self.assertRaises(ValueError):
+            self.a.get('guv')
+        self.a.getFundamentalTables()
+        self.assertEqual(self.a.get('guv'), self.a.fund_tables['guv'])
+
+
 
 if __name__ == '__main__':
     unittest.main()
