@@ -9,6 +9,7 @@ Detailed Description
 
 import os
 import re
+import json
 import datetime
 import requests
 from bs4 import BeautifulSoup
@@ -20,12 +21,13 @@ class Loader(object):
     alphavantage_api = 'https://www.alphavantage.co/query'
 
 
-    def __init__(self, name, typ, wkn, isin, boerse_name):
+    def __init__(self, name, typ, wkn, isin, boerse_name, avan_ticker):
         self.name = str(name)
         self.typ = str(typ)
         self.wkn = str(wkn)
         self.isin = str(isin)
         self.boerse_name = str(boerse_name)
+        self.avan_ticker = str(avan_ticker)
         self.existingTables = []
         self._resolve_boerse_urls()
         self.alphavantage_api_key = self._configure_api()
@@ -77,6 +79,7 @@ class Loader(object):
 
 
     def get(self, key):
+        """preferred way to access data of the object"""
         keys = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
         if key not in keys:
             raise ValueError('Invalid key, expect one of: %s' % keys)
@@ -90,6 +93,7 @@ class Loader(object):
 
 
     def _resolve_boerse_urls(self):
+        """resolving URLs for boerse.de"""
         pre = 'https://' + Loader.host
         post = self.boerse_name + '/' + self.isin
         self.fund_url = '/'.join([pre, Loader.fund_route, post])
@@ -97,6 +101,7 @@ class Loader(object):
 
 
     def _configure_api(self):
+        """API key for alpha vantag REST API"""
         key = ''
         try:
             key = os.environ['ALPHAVANTAGE_API_KEY']
@@ -172,6 +177,7 @@ class Loader(object):
                     rePerc = '(^.*)%$',
                     reNum = '^-?[0-9.]*,[0-9][0-9]?$',
                     reDate = [{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$', 'fmt': '%d.%m.%y'}]):
+        """Guess and convert types for fundamental tables and dividend table"""
         identified = True
         if isinstance(obj, dict):
             for key in obj:
@@ -207,7 +213,7 @@ class Loader(object):
 
 
     def _alphavantage_api(self, query):
-        """Reference: www.alphavantage.co/documentation"""
+        """mere request; reference: www.alphavantage.co/documentation"""
         if self.alphavantage_api_key == '':
             raise KeyError('Alpha Vantage API Key not defined')
         if not isinstance(query, dict):
@@ -225,96 +231,59 @@ class Loader(object):
         res = requests.get(Loader.alphavantage_api + '?' + '&'.join(querystrings))
         if res.status_code != 200:
             raise ValueError('Alpha Vantage returned: %s' % res.status_code)
+        try:
+            content = json.loads(res.content.decode()).keys()
+        except AttributeError:
+            raise AttributeError('Alpha Vantage returned empty content')
+        if 'Error Message' in content:
+            raise ValueError(json.loads(res.content.decode())['Error Message'])
         return res
 
 
     def _convert_alphavantage(self, data,
                               dateFmt = '%Y-%m-%d'):
+        """alphavantage REST to dict conversion"""
         content = json.loads(data.content.decode())['Time Series (Daily)']
-        dates = list(content.keys())
+        dates = sorted(list(content.keys()))
         try:
             datetime.datetime.strptime(dates[0], dateFmt)
         except ValueError:
             raise ValueError('Unexpected date structure')
         rownames = [datetime.datetime.strptime(d, dateFmt) for d in dates]
-        colnames = list(content[dates[0]].keys())
+        colnames = sorted(list(content[dates[0]].keys()))
         rows = []
-        for row in content:
-            rows.append([float(row[k]) for k in row])
-        return {'rownames': rownames, 'colnames': colnames, 'data': data}
+        for date in dates:
+            row = content[date]
+            rows.append([float(row[i]) for i in colnames])
+        return {'rownames': rownames, 'colnames': colnames, 'data': rows}
 
 
-    def getHistoricPrices(self, ticker, returnTable = False):
+    def getHistoricPrices(self, returnTable = False):
         query = {
-            'function': 'TIME_SERIES_DAILY',
-            'symbol': ticker,
+            'function': 'TIME_SERIES_DAILY_ADJUSTED',
+            'symbol': self.avan_ticker,
             'outputsize': 'full'
         }
         res = self._alphavantage_api(query)
-        res = json.loads(res.content.decode())['Time Series (Daily)']
         self.hist_table = self._convert_alphavantage(res)
         self.existingTables.append('hist')
         if returnTable:
             return self.hist_table
 
 
-
-a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie')
+a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie', 'ADS.DE')
 a.getDividendTable()
 a.getFundamentalTables()
-x = a.getHistoricPrices('ADS.DE')
-x.status_code
-y = json.loads(x.content.decode())
-y.keys()
-yy = y['Time Series (Daily)']
-y['Meta Data']
+a.getHistoricPrices()
 
-# TODO get() für tables und listen welche tables es gibt
+hist = a.get('hist')
+hist['colnames']
+hist['data'][:10]
+hist['rownames'][-10:-1]
 
-# TODO eigene API bauen!!
-# ticker = "ADS"
-# start = datetime.datetime(1990, 1, 1)
-#
-# def HistoricPrices(ticker,
-#                    start = datetime.datetime(1990, 1, 1)):
-#     """Download historic prices from yahoo! using ticker symbol"""
-#     # koennte man auch scrapen (aber dann ohne adjusted Prices)
-#     # Bsp: https://www.boerse.de/historische-kurse/BB-Biotech-Aktie/CH0038389992_seite,231,anzahl,20
-#     return pdr.get_data_yahoo(ticker, start=start)
-#     #return web.DataReader(ticker, "yahoo", start=start)
-#
-# x = pdr.get_data_yahoo(ticker, start=start)
-#
-# 'https://www.investopedia.com/markets/api/partial/historical/?Symbol=HMSF.L&Type=Historical+Prices&Timeframe=Daily&StartDate=Jan+10%2C+2018'
-# 'https://www.investopedia.com/markets/api/partial/historical/?Symbol=ADS.DE&Type=Historical+Prices&Timeframe=Daily&StartDate=Jan+10%2C+2018'
-# x
-
-# testStock = [
-#     {
-#         'Name': 'Addidas AG',
-#         'Typ': 'Aktie',
-#         'WKN': 'A1EWWW',
-#         'ISIN': 'DE000A1EWWW0',
-#         'yahooTicker': 'ADS.DE',
-#         'boerseURL': 'Adidas-Aktie/DE000A1EWWW0'
-#     },
-#     {
-#         'Name': 'BB Biotech',
-#         'Typ': 'Aktie',
-#         'WKN': 'A0NFN3',
-#         'ISIN': 'CH0038389992',
-#         'yahooTicker': 'BBZA.DE',
-#         'boerseURL': 'BB-Biotech-Aktie/CH0038389992'
-#     }
-# ]
-# boerseDe = {
-#     'host': 'www.boerse.de',
-#     'pathFund': 'fundamental-analyse',
-#     'pathDivid': 'dividenden'
-# }
-#
-# Fund_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathFund'], testStock[1]['boerseURL'])
-# Divid_url = 'https://%s/%s/%s' % (boerseDe['host'], boerseDe['pathDivid'], testStock[1]['boerseURL'])
+# TODO gucken welche Ticker die richtigen sind, notieren wie ich das raus kriege
+# TODO Test schreiben für BBiotech und Adidas
+# TODO gucken wie man adj close berechnet/ bzw ob ich den laufend weiter benutzen kann (kummulativ berechnet?)
 
 
 

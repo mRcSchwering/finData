@@ -101,10 +101,11 @@ class Test_getDividendTable(unittest.TestCase):
 
 
 
-class yahoo_api(unittest.TestCase):
-
+class Test_alphavantageAPI(unittest.TestCase):
 
     def setUp(self):
+        self.a = finData.load.Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie')
+        self.b = finData.load.Loader('BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'BB-Biotech-Aktie')
         pass
 
 
@@ -113,6 +114,8 @@ class yahoo_api(unittest.TestCase):
 
 
     def test_HistoricPrices(self):
+        resa = a.getHistoricPrices(True)
+        resb = b.getHistoricPrices(True)
         # res = finData.load.HistoricPrices('ADS.DE')
         # self.assertEqual(res.keys(), Index([u'Open', u'High', u'Low', u'Close', u'Adj Close', u'Volume'], dtype='object'))
         # self.assertEqual(res['Close']['2018-01-02'], 167.149)
