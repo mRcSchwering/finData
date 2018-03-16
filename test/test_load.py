@@ -40,7 +40,7 @@ class Test_getFundamentalTables(unittest.TestCase):
         idx16marktk = list(map(lambda x: x[idx16], res['marktk']['data']))
         self.assertEqual(idx16marktk, [201.49, 30253.57])
         idx16guv = list(map(lambda x: x[idx16], res['guv']['data']))
-        self.assertEqual(idx16guv, [19291, 9379, 1491, 1444, 1017, 403])
+        self.assertEqual(idx16guv, [19291, 9379, 1491, 1444, 1017, 405])
 
     def test_extractedValuesStockB(self):
         res = self.b.getFundamentalTables(True, ids=['bilanz'], texts=[])
@@ -122,7 +122,6 @@ class Test_alphavantageAPI(unittest.TestCase):
     def test_HistoricPricesStockB(self):
         self.b.getHistoricPrices()
         hist = self.b.get('hist')
-        self.assertEqual(hist['colnames'], colnames)
         lookup = datetime.date(2018, 3, 16)
         res = hist['data'][hist['rownames'].index(lookup)]
         exp = [68.3, 69.75, 68.3, 69.75, 69.75, 95306]
