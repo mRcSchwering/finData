@@ -118,7 +118,7 @@ class Loader(object):
             pass
         try:
             key = json.load(open('config.json'))['ALPHAVANTAGE_API_KEY']
-        except KeyError:
+        except KeyError or FileNotFoundError:
             pass
         return key
 
