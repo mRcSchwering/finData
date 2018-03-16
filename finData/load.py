@@ -116,9 +116,15 @@ class Loader(object):
             key = os.environ['ALPHAVANTAGE_API_KEY']
         except KeyError:
             pass
+        if key != '':
+            return key
         try:
-            key = json.load(open('config.json'))['ALPHAVANTAGE_API_KEY']
-        except KeyError or FileNotFoundError:
+            configFile = json.load(open('config.json'))
+            try:
+                key = configFile['ALPHAVANTAGE_API_KEY']
+            except KeyError:
+                pass
+        except FileNotFoundError:
             pass
         return key
 
