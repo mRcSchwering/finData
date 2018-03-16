@@ -36,23 +36,18 @@ class Test_getFundamentalTables(unittest.TestCase):
         self.assertEqual(len(res['marktk']['colnames']), 9)
         self.assertEqual(res['marktk']['rownames'],
                          ['Anzahl der Aktien', 'Marktkapitalisierung'])
-        #idx16 = [i for (i, d) in enumerate() if d == '2016']
         idx16 = res['marktk']['colnames'].index('2016')
-        #idx16marktk = list(map(lambda x: x[idx16], res['marktk']['data']))
-        idx16marktk = res['marktk']['data'][idx16]
+        idx16marktk = list(map(lambda x: x[idx16], res['marktk']['data']))
         self.assertEqual(idx16marktk, [201.49, 30253.57])
-        #idx16guv = list(map(lambda x: x[idx16[0]], res['guv']['data']))
-        idx16guv = res['guv']['data'][idx16]
+        idx16guv = list(map(lambda x: x[idx16], res['guv']['data']))
         self.assertEqual(idx16guv, [19291, 9379, 1491, 1444, 1017, 403])
 
     def test_extractedValuesStockB(self):
         res = self.b.getFundamentalTables(True, ids=['bilanz'], texts=[])
         self.assertEqual(len(res), 1)
         self.assertEqual(len(res['bilanz']['colnames']), 9)
-        #idx16 = [i for (i, d) in enumerate() if d == '2016']
         idx16 = res['bilanz']['colnames'].index('2016')
-        #for d in map(lambda x: x[idx16[0]], res['bilanz']['data']):
-        for d in res['bilanz']['data'][idx16]:
+        for d in map(lambda x: x[idx16], res['bilanz']['data']):
             self.assertTrue(math.isnan(d))
 
 
@@ -80,7 +75,7 @@ class Test_getDividendTable(unittest.TestCase):
         self.assertEqual(res['colnames'],
                          ['Datum', 'Dividende', 'Veränderung', 'Rendite'])
         #idx16 = [i for (i, d) in enumerate(map(lambda x: x[0], res['data'])) if d.year == 2016]
-        idx16 = list(map(lambda x: x[0].year, res['data'])).index('2016')
+        idx16 = list(map(lambda x: x[0].year, res['data'])).index(2016)
         self.assertEqual(res['data'][idx16][0], datetime.date(2016, 5, 13))
         floats = res['data'][idx16][1:]
         expected = [1.6, 0.0667, 0.0107]
@@ -112,8 +107,8 @@ class Test_alphavantageAPI(unittest.TestCase):
         pass
 
     def test_HistoricPricesStockA(self):
-        a.getHistoricPrices()
-        hist = a.get('hist')
+        self.a.getHistoricPrices()
+        hist = self.a.get('hist')
         colnames = ['1. open', '2. high', '3. low', '4. close',
                     '5. adjusted close', '6. volume', '7. dividend amount',
                     '8. split coefficient']
@@ -125,8 +120,8 @@ class Test_alphavantageAPI(unittest.TestCase):
             self.assertAlmostEqual(exp[i], res[i])
 
     def test_HistoricPricesStockB(self):
-        b.getHistoricPrices()
-        hist = b.get('hist')
+        self.b.getHistoricPrices()
+        hist = self.b.get('hist')
         self.assertEqual(hist['colnames'], colnames)
         lookup = datetime.date(2018, 3, 16)
         res = hist['data'][hist['rownames'].index(lookup)]
