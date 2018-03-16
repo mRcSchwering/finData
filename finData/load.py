@@ -10,37 +10,49 @@ Detailed Description
 import os
 import re
 import json
-import datetime
 import requests
+import datetime as dt
 from bs4 import BeautifulSoup
+
 
 class Loader(object):
     host = 'www.boerse.de'
     fund_route = 'fundamental-analyse'
     divid_route = 'dividenden'
     alphavantage_api = 'https://www.alphavantage.co/query'
+    currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR',
+                  'CNY', 'JPY', 'KRW', 'RUB']
+    tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
+              'marktk', 'divid', 'hist']
 
-
-    def __init__(self, name, typ, wkn, isin, boerse_name, avan_ticker):
+    def __init__(self, name, typ, wkn, isin, currency,
+                 boerse_name, avan_ticker):
         self.name = str(name)
         self.typ = str(typ)
         self.wkn = str(wkn)
         self.isin = str(isin)
+        self.currency = str(currency)
+        if self.currency not in Loader.currencies:
+            raise ValueError('Invalid currency ' +
+                             'expect one of: %s' % Loader.currencies)
         self.boerse_name = str(boerse_name)
         self.avan_ticker = str(avan_ticker)
         self.existingTables = []
         self._resolve_boerse_urls()
         self.alphavantage_api_key = self._configure_api()
 
-
-    def getFundamentalTables(self, returnTables = False,
-                             ids = ['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
-                             texts = ['Marktkapitalisierung']):
-        """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
+    def getFundamentalTables(self, returnTables=False,
+                             ids=['guv', 'bilanz', 'kennzahlen',
+                                  'rentabilitaet', 'personal'],
+                             texts=['Marktkapitalisierung']):
+        """Scrape fundamental data tables from boerse.de
+        given h3 Ids or h3 text search strings"""
         tabDict = {}
         soup = BeautifulSoup(requests.get(self.fund_url).content, 'lxml')
         for id in ids:
-            h3 = soup.find(lambda tag: tag.get('id') == id and tag.name == 'h3')
+            h3 = soup.find(
+                lambda tag: tag.get('id') == id and tag.name == 'h3'
+            )
             try:
                 tabDict[id.lower()[:6]] = h3.findNext('table')
             except AttributeError:
@@ -53,17 +65,17 @@ class Loader(object):
                 print('Table %s was not found' % text)
         out = {}
         for key, tab in tabDict.items():
-            out[key] = self._htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
+            out[key] = self._htmlTab2dict(tab, hasRownames=True,
+                                          hasColnames=True, removeEmpty=True)
         utab = self._decode(out)
         self.fund_tables = self._guessTypes(utab)
         self.existingTables.extend(self.fund_tables.keys())
         if returnTables:
             return self.fund_tables
 
-
-    def getDividendTable(self, returnTable = False,
-                         text = 'Dividenden'):
-        """Scrape dividend table from boerse.de given a h3 text search string"""
+    def getDividendTable(self, returnTable=False, text='Dividenden'):
+        """Scrape dividend table from boerse.de
+        given a h3 text search string"""
         soup = BeautifulSoup(requests.get(self.divid_url).content, 'lxml')
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
         try:
@@ -77,20 +89,18 @@ class Loader(object):
         if returnTable:
             return self.divid_table
 
-
     def get(self, key):
         """preferred way to access data of the object"""
-        keys = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
-        if key not in keys:
-            raise ValueError('Invalid key, expect one of: %s' % keys)
+        if key not in Loader.tables:
+            raise ValueError('Invalid key, expect one of: %s' % Loader.tables)
         if key not in self.existingTables:
-            raise ValueError('No data exists for this key, existing data: %s' % self.existingTables)
+            raise ValueError('No data exists for this key' +
+                             ' existing data: %s' % self.existingTables)
         if key == 'divid':
             return self.divid_table
         if key == 'hist':
             return self.hist_table
         return self.fund_tables[key]
-
 
     def _resolve_boerse_urls(self):
         """resolving URLs for boerse.de"""
@@ -98,7 +108,6 @@ class Loader(object):
         post = self.boerse_name + '/' + self.isin
         self.fund_url = '/'.join([pre, Loader.fund_route, post])
         self.divid_url = '/'.join([pre, Loader.divid_route, post])
-
 
     def _configure_api(self):
         """API key for alpha vantag REST API"""
@@ -113,12 +122,8 @@ class Loader(object):
             pass
         return key
 
-
-    def _htmlTab2dict(self, tab,
-                      hasRownames = True,
-                      hasColnames = True,
-                      removeEmpty = True,
-                      checkTable = True):
+    def _htmlTab2dict(self, tab, hasRownames=True, hasColnames=True,
+                      removeEmpty=True, checkTable=True):
         """Return dict of lists from html table string"""
         rows = tab.findAll('tr')
         rownamesIdx = 0 if hasRownames else -1
@@ -139,7 +144,9 @@ class Loader(object):
         if hasRownames:
             rownames = []
             for row in [rows[i] for i in nonEmptyRowIdxs]:
-                text = row.find('td').text.replace(u'\xa0', u' ').encode('utf-8').strip()
+                text = row.find('td') \
+                    .text.replace(u'\xa0', u' ') \
+                    .encode('utf-8').strip()
                 rownames.append(text)
             out['rownames'] = rownames
 
@@ -158,7 +165,6 @@ class Loader(object):
                 raise UserWarning('Data rows do not all have the same lengths')
         return out
 
-
     def _decode(self, obj):
         if isinstance(obj, dict):
             for key in obj:
@@ -170,13 +176,11 @@ class Loader(object):
             obj = obj.decode()
         return obj
 
-
-    def _guessTypes(self, obj,
-                    defStr = ['colnames', 'rownames'],
-                    defNaN = ['n.v.', '', '%', '-', '-%'],
-                    rePerc = '(^.*)%$',
-                    reNum = '^-?[0-9.]*,[0-9][0-9]?$',
-                    reDate = [{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$', 'fmt': '%d.%m.%y'}]):
+    def _guessTypes(self, obj, defStr=['colnames', 'rownames'],
+                    defNaN=['n.v.', '', '%', '-', '-%'], rePerc='(^.*)%$',
+                    reNum='^-?[0-9.]*,[0-9][0-9]?$',
+                    reDate=[{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$',
+                             'fmt': '%d.%m.%y'}]):
         """Guess and convert types for fundamental tables and dividend table"""
         identified = True
         if isinstance(obj, dict):
@@ -193,24 +197,23 @@ class Loader(object):
                 obj = float('NaN')
             elif re.search(rePerc, obj):
                 x = re.search(rePerc, obj).group(1).replace(',', '.')
-                x = x.replace(".", "", x.count(".") -1)
+                x = x.replace(".", "", x.count(".") - 1)
                 obj = float('NaN') if x in defNaN else float(x) / 100
             elif re.search(reNum, obj):
                 x = obj.replace(',', '.')
-                x = x.replace(".", "", x.count(".") -1)
+                x = x.replace(".", "", x.count(".") - 1)
                 obj = float('NaN') if x in defNaN else float(x)
             else:
                 pass
                 identified = False
                 for d in reDate:
                     if re.search(d['re'], obj):
-                        obj = datetime.datetime.strptime(obj, d['fmt']).date()
+                        obj = dt.datetime.strptime(obj, d['fmt']).date()
                         identified = True
                         break
             if not identified:
                 raise ValueError('Value not identified: ' + obj)
         return obj
-
 
     def _alphavantage_api(self, query):
         """mere request; reference: www.alphavantage.co/documentation"""
@@ -221,14 +224,15 @@ class Loader(object):
         paramsReq = ['function', 'symbol']
         paramsOpt = ['outputsize', 'datatype', 'interval']
         for param in paramsReq:
-            if not param in query.keys():
+            if param not in query.keys():
                 raise KeyError('Parameter required: %s' % param)
         querystrings = ['apikey=%s' % self.alphavantage_api_key]
         for key in query:
             if key not in paramsOpt + paramsReq:
                 raise KeyError('Unused parameter: %s' % key)
             querystrings.append('%s=%s' % (key, query[key]))
-        res = requests.get(Loader.alphavantage_api + '?' + '&'.join(querystrings))
+        res = requests.get(Loader.alphavantage_api + '?' +
+                           '&'.join(querystrings))
         if res.status_code != 200:
             raise ValueError('Alpha Vantage returned: %s' % res.status_code)
         try:
@@ -239,17 +243,16 @@ class Loader(object):
             raise ValueError(json.loads(res.content.decode())['Error Message'])
         return res
 
-
     def _convert_alphavantage(self, data,
-                              dateFmt = '%Y-%m-%d'):
+                              dateFmt='%Y-%m-%d'):
         """alphavantage REST to dict conversion"""
         content = json.loads(data.content.decode())['Time Series (Daily)']
         dates = sorted(list(content.keys()))
         try:
-            datetime.datetime.strptime(dates[0], dateFmt)
+            dt.datetime.strptime(dates[0], dateFmt)
         except ValueError:
             raise ValueError('Unexpected date structure')
-        rownames = [datetime.datetime.strptime(d, dateFmt) for d in dates]
+        rownames = [dt.datetime.strptime(d, dateFmt).date() for d in dates]
         colnames = sorted(list(content[dates[0]].keys()))
         rows = []
         for date in dates:
@@ -257,8 +260,7 @@ class Loader(object):
             rows.append([float(row[i]) for i in colnames])
         return {'rownames': rownames, 'colnames': colnames, 'data': rows}
 
-
-    def getHistoricPrices(self, returnTable = False):
+    def getHistoricPrices(self, returnTable=False):
         query = {
             'function': 'TIME_SERIES_DAILY_ADJUSTED',
             'symbol': self.avan_ticker,
@@ -271,21 +273,41 @@ class Loader(object):
             return self.hist_table
 
 
-a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'Adidas-Aktie', 'ADS.DE')
-a.getDividendTable()
-a.getFundamentalTables()
-a.getHistoricPrices()
+# a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR', 'Adidas-Aktie', 'ADS.DE')
+# a.getDividendTable()
+# a.getFundamentalTables()
+# a.getHistoricPrices()
+#
+# hist = a.get('hist')
+# colnames = ['1. open', '2. high', '3. low', '4. close', '5. adjusted close',
+#             '6. volume', '7. dividend amount', '8. split coefficient']
+# colnames == hist['colnames']
+#
+# lookup = dt.datetime(2018, 3, 16)
+# res = hist['data'][hist['rownames'].index(lookup.date())]
+# exp = [193.95, 196.6, 192.8, 194.1, 194.1, 1866982]
+# res[:6] == exp
+#
+#
+# b = Loader('BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'CHF', 'BB-Biotech-Aktie', 'BION.SW')
+# b.getDividendTable()
+# b.getFundamentalTables()
+# b.getHistoricPrices()
+#
+# hist = b.get('hist')
+# colnames = ['1. open', '2. high', '3. low', '4. close', '5. adjusted close',
+#             '6. volume', '7. dividend amount', '8. split coefficient']
+# colnames == hist['colnames']
+#
+# lookup = dt.datetime(2018, 3, 16)
+# res = hist['data'][hist['rownames'].index(lookup.date())]
+# exp = [68.3, 69.75, 68.3, 69.75, 69.75, 95306]
+# res[:6] == exp
 
-hist = a.get('hist')
-hist['colnames']
-hist['data'][:10]
-hist['rownames'][-10:-1]
 
 # TODO gucken welche Ticker die richtigen sind, notieren wie ich das raus kriege
 # TODO Test schreiben für BBiotech und Adidas
 # TODO gucken wie man adj close berechnet/ bzw ob ich den laufend weiter benutzen kann (kummulativ berechnet?)
-
-
 
 
 def main():
