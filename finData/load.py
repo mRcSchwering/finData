@@ -1,11 +1,8 @@
+# This Python file uses the following encoding: utf-8
 """Short Description.
 
 Detailed Description
 """
-
-#import pandas_datareader as pdr   # deprecated prd.get_data_yahoo ???
-#import pandas_datareader.data as web # usable DataReader ???
-#from tiingo import TiingoClient # useful??: No!
 
 import os
 import re
@@ -24,9 +21,14 @@ class Loader(object):
                   'CNY', 'JPY', 'KRW', 'RUB']
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
               'marktk', 'divid', 'hist']
+    testFiles = {
+        'fund': 'finData/testdata/fund_test.html',
+        'divid': 'finData/testdata/divid_test.html',
+        'hist': 'finData/testdata/hist_test.json'
+    }
 
     def __init__(self, name, typ, wkn, isin, currency,
-                 boerse_name, avan_ticker):
+                 boerse_name, avan_ticker, isTest=False):
         self.name = str(name)
         self.typ = str(typ)
         self.wkn = str(wkn)
@@ -40,6 +42,7 @@ class Loader(object):
         self.existingTables = []
         self._resolve_boerse_urls()
         self.alphavantage_api_key = self._configure_api()
+        self.isTest = isTest
 
     def getFundamentalTables(self, returnTables=False,
                              ids=['guv', 'bilanz', 'kennzahlen',
@@ -48,7 +51,13 @@ class Loader(object):
         """Scrape fundamental data tables from boerse.de
         given h3 Ids or h3 text search strings"""
         tabDict = {}
-        soup = BeautifulSoup(requests.get(self.fund_url).content, 'lxml')
+
+        if self.isTest:
+            req = self._getTestData('fund')
+        else:
+            req = requests.get(self.fund_url).content
+        soup = BeautifulSoup(req, 'lxml')
+
         for id in ids:
             h3 = soup.find(
                 lambda tag: tag.get('id') == id and tag.name == 'h3'
@@ -76,7 +85,13 @@ class Loader(object):
     def getDividendTable(self, returnTable=False, text='Dividenden'):
         """Scrape dividend table from boerse.de
         given a h3 text search string"""
-        soup = BeautifulSoup(requests.get(self.divid_url).content, 'lxml')
+
+        if self.isTest:
+            req = self._getTestData('divid')
+        else:
+            req = requests.get(self.divid_url).content
+        soup = BeautifulSoup(req, 'lxml')
+
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
         try:
             tab = h3.findNext('table')
@@ -88,6 +103,18 @@ class Loader(object):
         self.existingTables.append('divid')
         if returnTable:
             return self.divid_table
+
+    def getHistoricPrices(self, returnTable=False):
+        query = {
+            'function': 'TIME_SERIES_DAILY_ADJUSTED',
+            'symbol': self.avan_ticker,
+            'outputsize': 'full'
+        }
+        res = self._alphavantage_api(query)
+        self.hist_table = self._convert_alphavantage(res)
+        self.existingTables.append('hist')
+        if returnTable:
+            return self.hist_table
 
     def get(self, key):
         """preferred way to access data of the object"""
@@ -119,7 +146,8 @@ class Loader(object):
         if key != '':
             return key
         try:
-            configFile = json.load(open('config.json'))
+            with open('config.json') as ouf:
+                configFile = json.load(ouf)
             try:
                 key = configFile['ALPHAVANTAGE_API_KEY']
             except KeyError:
@@ -184,7 +212,7 @@ class Loader(object):
 
     def _guessTypes(self, obj, defStr=['colnames', 'rownames'],
                     defNaN=['n.v.', '', '%', '-', '-%'], rePerc='(^.*)%$',
-                    reNum='^-?[0-9.]*,[0-9][0-9]?$',
+                    reNum='^-?[0-9.]*,[0-9][0-9]*$',
                     reDate=[{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$',
                              'fmt': '%d.%m.%y'}]):
         """Guess and convert types for fundamental tables and dividend table"""
@@ -237,22 +265,27 @@ class Loader(object):
             if key not in paramsOpt + paramsReq:
                 raise KeyError('Unused parameter: %s' % key)
             querystrings.append('%s=%s' % (key, query[key]))
+
+        if self.isTest:
+            return self._getTestData('hist')
         res = requests.get(Loader.alphavantage_api + '?' +
                            '&'.join(querystrings))
+
         if res.status_code != 200:
             raise ValueError('Alpha Vantage returned: %s' % res.status_code)
+        content = json.loads(res.content.decode())
         try:
-            content = json.loads(res.content.decode()).keys()
+            contentKeys = content.keys()
         except AttributeError:
             raise AttributeError('Alpha Vantage returned empty content')
-        if 'Error Message' in content:
-            raise ValueError(json.loads(res.content.decode())['Error Message'])
-        return res
+        if 'Error Message' in contentKeys:
+            raise ValueError(content['Error Message'])
+        return content
 
     def _convert_alphavantage(self, data,
                               dateFmt='%Y-%m-%d'):
         """alphavantage REST to dict conversion"""
-        content = json.loads(data.content.decode())['Time Series (Daily)']
+        content = data['Time Series (Daily)']
         dates = sorted(list(content.keys()))
         try:
             dt.datetime.strptime(dates[0], dateFmt)
@@ -266,23 +299,17 @@ class Loader(object):
             rows.append([float(row[i]) for i in colnames])
         return {'rownames': rownames, 'colnames': colnames, 'data': rows}
 
-    def getHistoricPrices(self, returnTable=False):
-        query = {
-            'function': 'TIME_SERIES_DAILY_ADJUSTED',
-            'symbol': self.avan_ticker,
-            'outputsize': 'full'
-        }
-        res = self._alphavantage_api(query)
-        self.hist_table = self._convert_alphavantage(res)
-        self.existingTables.append('hist')
-        if returnTable:
-            return self.hist_table
+    def _getTestData(self, which):
+        if which in ['fund', 'divid']:
+            with open(Loader.testFiles[which]) as inf:
+                testdata = inf.read()
+            return bytes(testdata, 'utf-8')
+        if which in ['hist']:
+            with open(Loader.testFiles['hist']) as inf:
+                testdata = json.load(inf)
+            return testdata
+        raise ValueError('Invalid Testdata')
 
-
-# a = Loader('Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR', 'Adidas-Aktie', 'ADS.DE')
-# a.getDividendTable()
-# a.getFundamentalTables()
-# a.getHistoricPrices()
 #
 # hist = a.get('hist')
 # colnames = ['1. open', '2. high', '3. low', '4. close', '5. adjusted close',
