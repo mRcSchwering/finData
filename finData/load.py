@@ -22,9 +22,9 @@ class Loader(object):
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
               'marktk', 'divid', 'hist']
     testFiles = {
-        'fund': 'finData/testdata/fund_test.html',
-        'divid': 'finData/testdata/divid_test.html',
-        'hist': 'finData/testdata/hist_test.json'
+        'fund': 'test/testdata/fund.html',
+        'divid': 'test/testdata/divid.html',
+        'hist': 'test/testdata/hist.json'
     }
 
     def __init__(self, name, typ, wkn, isin, currency,
