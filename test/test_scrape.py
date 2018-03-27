@@ -1,6 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import unittest
-import finData.load
+import finData.scrape
 import datetime
 import math
 
@@ -14,8 +14,8 @@ stockA = ['Test AG', 'Aktie', 'XXXXX', 'XXXXX', 'EUR', 'abc.de', 'XXX.XX', True]
 class Test_init(unittest.TestCase):
 
     def setUp(self):
-        self.a = finData.load.Loader(*ads)
-        self.b = finData.load.Loader(*bion)
+        self.a = finData.scrape.Scraper(*ads)
+        self.b = finData.scrape.Scraper(*bion)
 
     def test_fundURLs(self):
         self.assertEqual(self.a.fund_url, 'https://www.boerse.de/fundamental-analyse/Adidas-Aktie/DE000A1EWWW0')
@@ -29,7 +29,7 @@ class Test_init(unittest.TestCase):
 class Test_getFundamentalTables(unittest.TestCase):
 
     def setUp(self):
-        self.a = finData.load.Loader(*stockA)
+        self.a = finData.scrape.Scraper(*stockA)
 
     def test_returningTables(self):
         resA = self.a.getFundamentalTables(True)
@@ -51,7 +51,7 @@ class Test_getFundamentalTables(unittest.TestCase):
 class Test_getDividendTable(unittest.TestCase):
 
     def setUp(self):
-        self.a = finData.load.Loader(*stockA)
+        self.a = finData.scrape.Scraper(*stockA)
 
     def test_returningTables(self):
         resA = self.a.getDividendTable(True)
@@ -70,12 +70,12 @@ class Test_getDividendTable(unittest.TestCase):
             res['rownames']
 
 
-class Test_alphavantageAPI(unittest.TestCase):
+class Test_getHistoricPrices(unittest.TestCase):
 
     def setUp(self):
-        self.a = finData.load.Loader(*stockA)
+        self.a = finData.scrape.Scraper(*stockA)
 
-    def test_HistoricPricesStockA(self):
+    def test_extractedValuesStockA(self):
         self.a.getHistoricPrices()
         hist = self.a.get('hist')
         colnames = ['1. open', '2. high', '3. low', '4. close',
@@ -92,7 +92,7 @@ class Test_alphavantageAPI(unittest.TestCase):
 class Test_get(unittest.TestCase):
 
     def setUp(self):
-        self.a = finData.load.Loader(*stockA)
+        self.a = finData.scrape.Scraper(*stockA)
 
     def test_general(self):
         with self.assertRaises(ValueError):

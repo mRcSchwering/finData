@@ -12,7 +12,7 @@ import datetime as dt
 from bs4 import BeautifulSoup
 
 
-class Loader(object):
+class Scraper(object):
     host = 'www.boerse.de'
     fund_route = 'fundamental-analyse'
     divid_route = 'dividenden'
@@ -22,9 +22,9 @@ class Loader(object):
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
               'marktk', 'divid', 'hist']
     testFiles = {
-        'fund': 'test/testdata/fund.html',
-        'divid': 'test/testdata/divid.html',
-        'hist': 'test/testdata/hist.json'
+        'fund': 'finData/testdata/fund.html',
+        'divid': 'finData/testdata/divid.html',
+        'hist': 'finData/testdata/hist.json'
     }
 
     def __init__(self, name, typ, wkn, isin, currency,
@@ -34,9 +34,9 @@ class Loader(object):
         self.wkn = str(wkn)
         self.isin = str(isin)
         self.currency = str(currency)
-        if self.currency not in Loader.currencies:
+        if self.currency not in Scraper.currencies:
             raise ValueError('Invalid currency ' +
-                             'expect one of: %s' % Loader.currencies)
+                             'expect one of: %s' % Scraper.currencies)
         self.boerse_name = str(boerse_name)
         self.avan_ticker = str(avan_ticker)
         self.existingTables = []
@@ -118,8 +118,8 @@ class Loader(object):
 
     def get(self, key):
         """preferred way to access data of the object"""
-        if key not in Loader.tables:
-            raise ValueError('Invalid key, expect one of: %s' % Loader.tables)
+        if key not in Scraper.tables:
+            raise ValueError('Invalid key, expect one of: %s' % Scraper.tables)
         if key not in self.existingTables:
             raise ValueError('No data exists for this key' +
                              ' existing data: %s' % self.existingTables)
@@ -131,10 +131,10 @@ class Loader(object):
 
     def _resolve_boerse_urls(self):
         """resolving URLs for boerse.de"""
-        pre = 'https://' + Loader.host
+        pre = 'https://' + Scraper.host
         post = self.boerse_name + '/' + self.isin
-        self.fund_url = '/'.join([pre, Loader.fund_route, post])
-        self.divid_url = '/'.join([pre, Loader.divid_route, post])
+        self.fund_url = '/'.join([pre, Scraper.fund_route, post])
+        self.divid_url = '/'.join([pre, Scraper.divid_route, post])
 
     def _configure_api(self):
         """API key for alpha vantag REST API"""
@@ -268,7 +268,7 @@ class Loader(object):
 
         if self.isTest:
             return self._getTestData('hist')
-        res = requests.get(Loader.alphavantage_api + '?' +
+        res = requests.get(Scraper.alphavantage_api + '?' +
                            '&'.join(querystrings))
 
         if res.status_code != 200:
@@ -301,46 +301,17 @@ class Loader(object):
 
     def _getTestData(self, which):
         if which in ['fund', 'divid']:
-            with open(Loader.testFiles[which]) as inf:
+            with open(Scraper.testFiles[which]) as inf:
                 testdata = inf.read()
             return bytes(testdata, 'utf-8')
         if which in ['hist']:
-            with open(Loader.testFiles['hist']) as inf:
+            with open(Scraper.testFiles['hist']) as inf:
                 testdata = json.load(inf)
             return testdata
         raise ValueError('Invalid Testdata')
 
-#
-# hist = a.get('hist')
-# colnames = ['1. open', '2. high', '3. low', '4. close', '5. adjusted close',
-#             '6. volume', '7. dividend amount', '8. split coefficient']
-# colnames == hist['colnames']
-#
-# lookup = dt.datetime(2018, 3, 16)
-# res = hist['data'][hist['rownames'].index(lookup.date())]
-# exp = [193.95, 196.6, 192.8, 194.1, 194.1, 1866982]
-# res[:6] == exp
-#
-#
-# b = Loader('BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'CHF', 'BB-Biotech-Aktie', 'BION.SW')
-# b.getDividendTable()
-# b.getFundamentalTables()
-# b.getHistoricPrices()
-#
-# hist = b.get('hist')
-# colnames = ['1. open', '2. high', '3. low', '4. close', '5. adjusted close',
-#             '6. volume', '7. dividend amount', '8. split coefficient']
-# colnames == hist['colnames']
-#
-# lookup = dt.datetime(2018, 3, 16)
-# res = hist['data'][hist['rownames'].index(lookup.date())]
-# exp = [68.3, 69.75, 68.3, 69.75, 69.75, 95306]
-# res[:6] == exp
-
 
 # TODO gucken welche Ticker die richtigen sind, notieren wie ich das raus kriege
-# TODO Test schreiben für BBiotech und Adidas
-# TODO gucken wie man adj close berechnet/ bzw ob ich den laufend weiter benutzen kann (kummulativ berechnet?)
 
 
 def main():
