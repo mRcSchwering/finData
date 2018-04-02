@@ -1,45 +1,43 @@
 version: 2
 jobs:
   build:
-    working_directory: /build
     docker:
       - image: docker:17.05.0-ce-git
     steps:
       - checkout
-      - run:
-          name: Create workspace
-          command: mkdir /persist_build
       - setup_remote_docker:
           version: 17.11.0-ce
       - run:
-          name: Build App
-          command: docker build -t build .
+          name: Build finData
+          command: docker build -t "mrcschwering/cci-findata_build:latest" .
       - run:
-          name: Check docker
+          name: Push finData build
           command: |
-            docker images
-  unittest-scraper:
+            docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
+            docker push "mrcschwering/cci-findata_build:latest"
+  unittest-scraper-old:
     docker:
       - image: python:3.5-slim
     steps:
       - checkout
       - run: pip3 install -r requirements.txt
       - run: python -m unittest discover -s test -v
-  unittest-dbConnector:
+  unittest-scraper-new:
+    working_directory: /app
     docker:
-      - image: python:3.5-slim
+      - image: mrcschwering/cci-findata_build:latest
     steps:
-      - checkout
-      - run: pip3 install -r requirements.txt
-      - run: echo "Hi"
+      - run: ls -la /
+      - run: ls -la .
+      - run: python -m unittest discover -s test -v
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
-      - unittest-scraper:
+      - unittest-scraper-old:
           requires:
             - build
-      - unittest-dbConnector:
+      - unittest-scraper-new:
           requires:
             - build
