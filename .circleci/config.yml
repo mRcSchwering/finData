@@ -1,22 +1,20 @@
 version: 2
 jobs:
   build:
-    working_directory: /app
+    working_directory: /build
     docker:
       - image: docker:17.12.1-ce-git
     steps:
       - checkout
       - run:
           name: Create workspace
-          command: mkdir /persist_job
+          command: mkdir /persist_build
       - run:
-          name: See build job
-          command: ls -la && ls -la /
-      - run:
-          name: Install Dependencies
+          name: Check docker
           command: |
-            apk add --no-cache py-pip=9.0.0-r1
-            pip install docker-compose==1.12.0
+            docker ps -a
+            docker images
+            docker volume ls
   unittest-scraper:
     docker:
       - image: python:3.5-slim
