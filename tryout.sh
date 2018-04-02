@@ -73,6 +73,9 @@ sudo docker stop "$PG_NAME"
 
 
 
+docker run -v /var/run/docker.sock:/var/run/docker.sock -ti docker
+
+
 # circleci mit mehreren Containern
 # ich muss "docker-in-docker" machen, wenn ich mit circleci
 # 1. einmal builden möchte und dann den build in nachfolgende jobs übergeben möchte

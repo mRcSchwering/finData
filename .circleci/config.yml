@@ -9,7 +9,7 @@ jobs:
       - run:
           name: Create workspace
           command: mkdir /persist_build
-      - setup_remote_docker
+      #- setup_remote_docker
       - run:
           name: Check docker
           command: |
