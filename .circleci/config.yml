@@ -9,13 +9,15 @@ jobs:
       - run:
           name: Create workspace
           command: mkdir /persist_build
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 17.11.0-ce
+      - run:
+          name: Build App
+          command: docker build -t build .
       - run:
           name: Check docker
           command: |
-            docker ps -a
             docker images
-            docker volume ls
   unittest-scraper:
     docker:
       - image: python:3.5-slim
