@@ -1,4 +1,4 @@
-version: 1
+version: 2
 jobs:
   build:
     docker:
@@ -6,9 +6,28 @@ jobs:
     steps:
       - checkout
       - run: pip3 install -r requirements.txt
+  unittest-scraper:
+    docker:
+      - image: python:3.5-slim
+    steps:
+      - checkout
+      - run: pip3 install -r requirements.txt
       - run: python -m unittest discover -s test -v
+  unittest-dbConnector:
+    docker:
+      - image: python:3.5-slim
+    steps:
+      - checkout
+      - run: pip3 install -r requirements.txt
+      - run: echo "Hi"
 workflows:
-  version: 1
-  build:
+  version: 2
+  build_and_test:
     jobs:
-      - build
+      - build:
+      - unittest-scraper:
+          requires:
+            - build:
+      - unittest-dbConnector:
+          requires:
+            - build:
