@@ -3,13 +3,13 @@ jobs:
   build:
     working_directory: /build
     docker:
-      - image: image: docker:17.05.0-ce-git
+      - image: docker:17.05.0-ce-git
     steps:
       - checkout
       - run:
           name: Create workspace
           command: mkdir /persist_build
-      #- setup_remote_docker
+      - setup_remote_docker
       - run:
           name: Check docker
           command: |
