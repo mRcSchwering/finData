@@ -76,20 +76,16 @@ sudo docker stop "$PG_NAME"
 docker run -v /var/run/docker.sock:/var/run/docker.sock -ti docker
 
 
-# circleci mit mehreren Containern
-# ich muss "docker-in-docker" machen, wenn ich mit circleci
-# 1. einmal builden möchte und dann den build in nachfolgende jobs übergeben möchte
-# 2. ich mehrere container miteinerander kommunizieren lassen möchte
-#
-# TL;DR
-# ich nehme ein reines docekr image mit docker-compose als base image (und git)
-# ist setze ein docker in docker auf (da gibts ein paar haken)
-# ich baue mein env im docker im docker auf wie gehabt
-# zum persistieren kann ich jetzt verschiedene optionen nutzen
-# hier macht das eienr mit dem circleci cache:
-# https://circleci.com/blog/how-to-build-a-docker-image-on-circleci-2-0/
-# mir erscheint es aber sinnvoller im äußeren docker (also das base image von circleci)
-# docker save zu machen und das entstandene .tar über einen workspace zu persistieren
-# das ist ein directory was ich einhängen kann und was über den workflow persistiert wird
-# circleci persistieren in workflows:
-# https://circleci.com/docs/2.0/workflows/
+# Build -> Test fan out
+# siehe circleci/config.yml
+# build basiert auf einem docker base image was wiederum mit der dockerfile in . ein image baut
+# das ist dann die app, die auf mein docker hub gepusht wird
+# damit docker-indocker keine probleme macht wird vorher remote_docker eingestellt (circleci einstellung)
+# das gepushte image kann ich dann wiederum als base image laden
+# das mache ich im job unittest-scraper-new (funktioniert!)
+
+# integration tests
+# hier brauch ich ja mehrere container
+# sollte ähnlich gehen, nur halt mit docker compose
+# vllt brauche ich da auch den "workspace" von circleci (da kann man dirs zwischen jobs sharen)
+# oder einfach mehrere container innerhalb eines docker base images laufen lassen...
