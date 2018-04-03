@@ -1,9 +1,3 @@
-#!/usr/bin/env bash
-
-python3 -m unittest test_scrape
-python3 -m unittest discover -s test -v -p "*test_scrape*"
-
-
 
 # Postgres container
 
