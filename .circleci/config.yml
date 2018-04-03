@@ -40,3 +40,6 @@ workflows:
       - smoke-scraper:
           requires:
             - build
+      - smoke-loader:
+          requires:
+            - build

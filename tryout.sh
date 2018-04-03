@@ -1,6 +1,9 @@
 
 # Postgres container
 
+# TODO test envir für loader designen
+
+
 PG_NAME="pg_testcontainer"
 VOL_NAME="pg_testvolume"
 
