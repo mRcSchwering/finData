@@ -22,7 +22,7 @@ jobs:
     docker:
       - image: mrcschwering/cci-findata_build:latest
     steps:
-      - run: python3 -m unittest discover -s -v test -p "*test_scrape*"
+      - run: python3 -m unittest discover -s test -v -p "*test_scrape*"
 
 
 workflows:
