@@ -17,22 +17,12 @@ jobs:
             docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
             docker push "mrcschwering/cci-findata_build:latest"
 
-  unittest-scraper-old:
-    docker:
-      - image: python:3.5-slim
-    steps:
-      - checkout
-      - run: pip3 install -r requirements.txt
-      - run: python -m unittest discover -s test -v
-
-  unittest-scraper-new:
+  smoke-scraper:
     working_directory: /app
     docker:
       - image: mrcschwering/cci-findata_build:latest
     steps:
-      - run: ls -la /
-      - run: ls -la .
-      - run: python -m unittest discover -s test -v
+      - run: python3 -m unittest discover -s -v test -p "*test_scrape*"
 
 
 workflows:
@@ -40,9 +30,6 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - unittest-scraper-old:
-          requires:
-            - build
-      - unittest-scraper-new:
+      - smoke-scraper:
           requires:
             - build

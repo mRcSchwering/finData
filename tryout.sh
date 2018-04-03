@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 
+python3 -m unittest test_scrape
+python3 -m unittest discover -s -v test -p "*test_scrape*"
+
+
+
+# Postgres container
+
 PG_NAME="pg_testcontainer"
 VOL_NAME="pg_testvolume"
+
+# tl;dr
+sudo docker run --name="$PG_NAME" --hostname="$PG_NAME" --rm  -d -v "$VOL_NAME":/var/lib/postgresql/data -p 5432:5432 postgres
+
 
 # container name, and hostname inside container
 # rm container and all unnamed volumes after stop
@@ -73,8 +84,10 @@ sudo docker stop "$PG_NAME"
 
 
 
-docker run -v /var/run/docker.sock:/var/run/docker.sock -ti docker
 
+
+
+# docker in docker
 
 # Build -> Test fan out
 # siehe circleci/config.yml
