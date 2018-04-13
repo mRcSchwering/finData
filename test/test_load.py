@@ -2,6 +2,12 @@
 import unittest
 import finData.load
 
+
+# TODO
+# test psycopg2 mit unittest.mock
+# https://gist.github.com/graphaelli/906b624c18f77f50da5cd0cd4211c3c8
+# https://stackoverflow.com/questions/35143055/how-to-mock-psycopg2-cursor-object
+
 # import datetime
 # import math
 #

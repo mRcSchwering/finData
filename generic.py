@@ -2,6 +2,36 @@
 import finData.scrape as fDs
 
 
+
+# DB schema bauen
+import psycopg2
+from psycopg2.extensions import AsIs
+
+conn = psycopg2.connect("dbname=findata user=postgres password=postgres host=127.0.0.1 port=5432")
+cur = conn.cursor()
+cur.execute("""
+    CREATE TABLE IF NOT EXISTS %(schema_name)s.%(table_name)s (
+      id          INTEGER PRIMARY KEY,
+      name        VARCHAR(50) NOT NULL,
+      isin        VARCHAR(50) UNIQUE NOT NULL,
+      wkn         VARCHAR(50) UNIQUE NOT NULL,
+      typ         VARCHAR(10) NOT NULL,
+      currency    VARCHAR(5) NOT NULL,
+      boerse_name VARCHAR(50) UNIQUE NOT NULL,
+      avan_ticker VARCHAR(50) UNIQUE NOT NULL
+    );
+""", {'schema_name': AsIs('findata_init'), 'table_name': AsIs('stock')})
+conn.commit()
+cur.close()
+conn.close()
+
+
+
+
+
+
+
+
 # python3 -m unittest discover -s test -v
 
 DAX = [
