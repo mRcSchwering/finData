@@ -50,7 +50,6 @@ jobs:
       - run:
           name: Create Test DB
           command: |
-            createdb -h 127.0.0.1 -p 5432 testdb -U postgres -w postgres
             psql -h 127.0.0.1 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
 
   deploy:
