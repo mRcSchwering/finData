@@ -31,6 +31,42 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s test -v -p "*test_load*"
 
+  integration-postgres:
+    docker:
+      - image: docker:17.05.0-ce-git
+    environment:
+      PG_NAME: "postgres_server"
+    steps:
+      - setup_remote_docker:
+          version: 17.11.0-ce
+      - run:
+          name: Install psql client
+          command: |
+            apk --update add postgresql_client
+      - run:
+          name: Start Postgres server
+          command: |
+            docker run --name="$PG_NAME" --hostname="$PG_NAME" -d -p 5432:5432 postgres:9.5.12-alpine
+      - run:
+          name: Create Test DB
+          command: |
+            createdb -h 127.0.0.1 -p 5432 testdb -U postgres -w postgres
+
+  deploy:
+    docker:
+      - image: docker:17.05.0-ce-git
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 17.11.0-ce
+      - run:
+          name: Build tested finData
+          command: docker build -t "mrcschwering/cci-findata_deploy:latest" .
+      - run:
+          name: Push tested finData
+          command: |
+            docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
+            docker push "mrcschwering/cci-findata_deploy:latest"
 
 workflows:
   version: 2
@@ -43,3 +79,10 @@ workflows:
       - smoke-loader:
           requires:
             - build
+      - integration-postgres:
+          requires:
+            - smoke-scraper
+            - smoke-loader
+      - deploy:
+          requires:
+            - integration-postgres
