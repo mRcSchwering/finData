@@ -48,9 +48,14 @@ jobs:
           command: |
             docker run --name="$PG_NAME" --hostname="$PG_NAME" -d -p 5432:5432 postgres:9.5.12-alpine
       - run:
-          name: Create Test DB
+          name: Creating Test DB
           command: |
-            psql -h 127.0.0.1 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
+            docker ps
+            docker ps -a | grep "$PG_NAME"
+            docker network ls
+            netstat -plunt
+            netstat -plunt | grep 5432
+            psql -h 35.196.76.213:2376 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
 
   deploy:
     docker:
