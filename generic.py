@@ -153,18 +153,27 @@ DAX = [
     }
 ]
 
-
+import finData
+import finData.scrape as fDs
 len(DAX)
-i = 7
+i = 0
 aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'], DAX[i]['isin'],
                     DAX[i]['currency'], DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
 
 
 aktie.getDividendTable()
 aktie.getFundamentalTables()
+aktie.getHistoricPrices()
 
-aktie.get('guv')
-aktie.get('bilanz')
-aktie.get('marktk')
-aktie.get('kennza')
-aktie.get('rentab')
+x = aktie.get('guv')
+x = aktie.get('bilanz')
+x = aktie.get('kennza')
+x = aktie.get('rentab')
+x = aktie.get('person')
+x = aktie.get('marktk')
+x = aktie.get('divid')
+x = aktie.get('hist')
+
+x.keys()
+x['colnames']
+x['rownames']

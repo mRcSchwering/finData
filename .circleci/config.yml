@@ -55,7 +55,7 @@ jobs:
             docker network ls
             netstat -plunt
             netstat -plunt | grep 5432
-            psql -h 35.196.76.213:2376 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
+            psql -h 35.196.76.213 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
 
   deploy:
     docker:

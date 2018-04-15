@@ -1,3 +1,6 @@
+# TODO mit docker-compose container für integration orchestrieren
+# TODO base image auf alpine mit postgresql-client 
+
 
 # start server
 PG_NAME="postgres_server"
