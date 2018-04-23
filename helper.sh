@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# test
 if [ $1 ] && [ "$1" = "test" ]; then
   echo "Running tests..."
   if  [ $2 ]; then
@@ -10,8 +12,10 @@ if [ $1 ] && [ "$1" = "test" ]; then
     echo
     python3 -m unittest discover -s test -v
   fi
-else
-  echo "no argument"
+
+# no argument
+if [ -z $1 ]; then
+  echo "no argument given"
 fi
 
 

@@ -1,5 +1,34 @@
 # TODO mit docker-compose container für integration orchestrieren
-# TODO base image auf alpine mit postgresql-client 
+
+
+# damit starte ich container,networks,volumes
+# docker-compose erstellt automatisch ein docker network wo alle
+# container in der docker-compose.yml direkt drinnen sind
+sudo docker-compose up -d
+
+# stop zum stoppen, geht auch einzelner service
+# down löscht auch alle container, volumes, networks
+sudo docker-compose down
+
+# als psql client: psql-cient
+sudo docker build -t "mrcschwering/psql-client" .
+sudo docker push "mrcschwering/psql-client:latest"
+
+# docker-compose erstellt ein network (findata_default, weil ./.. = findata)
+# in dem sind die gestarteten services beim namen erreichbar
+# die werden jedem container in die hosts datei geschrieben
+sudo docker-compose run client_postgres sh
+
+# create db
+sudo docker-compose run client_postgres \
+  createdb -h server_postgres -p 5432 findata -U postgres -w postgres
+
+# check it out
+sudo docker-compose run client_postgres \
+  psql -h server_postgres -p 5432 findata -U postgres -w postgres \
+  --command="\l"
+
+
 
 
 # start server

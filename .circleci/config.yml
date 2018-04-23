@@ -40,22 +40,19 @@ jobs:
       - setup_remote_docker:
           version: 17.11.0-ce
       - run:
-          name: Install psql client
-          command: |
-            apk --update add postgresql-client
+          name: Start minimal environment
+          command: docker-compose up -d
       - run:
-          name: Start Postgres server
+          name: Use client to create a new DB
           command: |
-            docker run --name="$PG_NAME" --hostname="$PG_NAME" -d -p 5432:5432 postgres:9.5.12-alpine
+            docker-compose run client_postgres \
+              createdb -h server_postgres -p 5432 findata -U postgres -w postgres
       - run:
-          name: Creating Test DB
+          name: Use client to query new DB
           command: |
-            docker ps
-            docker ps -a | grep "$PG_NAME"
-            docker network ls
-            netstat -plunt
-            netstat -plunt | grep 5432
-            psql -h 35.196.76.213 -p 5432 -c "CREATE DATABASE testdb" -U postgres -w postgres
+            docker-compose run client_postgres \
+              psql -h server_postgres -p 5432 findata -U postgres -w postgres \
+              --command="\l"
 
   deploy:
     docker:
