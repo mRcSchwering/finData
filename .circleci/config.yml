@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 18.03.0-ce
+          version: 17.11.0-ce
       - run:
           name: Build finData
           command: docker build -t "mrcschwering/cci-findata_build:latest" .
@@ -39,7 +39,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 18.03.0-ce
+          version: 17.11.0-ce
       - run:
           name: Start server and client containers
           command: docker-compose up -d
@@ -61,7 +61,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 18.03.0-ce
+          version: 17.11.0-ce
       - run:
           name: Build tested finData
           command: docker build -t "mrcschwering/cci-findata_deploy:latest" .
