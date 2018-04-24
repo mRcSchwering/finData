@@ -40,15 +40,21 @@ jobs:
       - setup_remote_docker:
           version: 17.11.0-ce
       - run:
-          name: Start minimal environment
+          name: Install Docker Compose
+          command: |
+            curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+            chmod +x ~/docker-compose
+            sudo mv ~/docker-compose /usr/local/bin/docker-compose
+      - run:
+          name: Start server and client containers
           command: docker-compose up -d
       - run:
-          name: Use client to create a new DB
+          name: Create a new DB
           command: |
             docker-compose run client_postgres \
               createdb -h server_postgres -p 5432 findata -U postgres -w postgres
       - run:
-          name: Use client to query new DB
+          name: Query new DB
           command: |
             docker-compose run client_postgres \
               psql -h server_postgres -p 5432 findata -U postgres -w postgres \

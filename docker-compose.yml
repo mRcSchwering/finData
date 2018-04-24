@@ -6,3 +6,5 @@ services:
       - '5432:5432'
   client_postgres:
     image: mrcschwering/psql-client:latest
+    depends_on:
+        - server_postgres
