@@ -3,11 +3,11 @@ jobs:
 
   build:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: docker:18.03.0-ce-git
     steps:
       - checkout
       - setup_remote_docker:
-          version: 17.11.0-ce
+          version: 18.03.0-ce
       - run:
           name: Build finData
           command: docker build -t "mrcschwering/cci-findata_build:latest" .
@@ -33,19 +33,13 @@ jobs:
 
   integration-postgres:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: mrcschwering/docker-compose:18.03.0-ce-git
     environment:
       PG_NAME: "postgres_server"
     steps:
+      - checkout
       - setup_remote_docker:
-          version: 17.11.0-ce
-      - run:
-          name: Install Docker Compose
-          command: |
-            apk --no-cache add py2-pip
-            pip --version
-            pip install docker-compose
-            docker-compose --version
+          version: 18.03.0-ce
       - run:
           name: Start server and client containers
           command: docker-compose up -d
@@ -63,11 +57,11 @@ jobs:
 
   deploy:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: docker:18.03.0-ce-git
     steps:
       - checkout
       - setup_remote_docker:
-          version: 17.11.0-ce
+          version: 18.03.0-ce
       - run:
           name: Build tested finData
           command: docker build -t "mrcschwering/cci-findata_deploy:latest" .
