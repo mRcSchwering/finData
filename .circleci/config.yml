@@ -38,8 +38,7 @@ jobs:
       PG_NAME: "postgres_server"
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 17.11.0-ce
+      - setup_remote_docker
       - run:
           name: Start server and client containers
           command: |
@@ -49,13 +48,13 @@ jobs:
       - run:
           name: Create a new DB
           command: |
-            docker-compose run client_postgres \
-              createdb -h server_postgres -p 5432 findata -U postgres -w postgres
+            docker-compose run client \
+              createdb -h server -p 5432 findata -U postgres -w postgres
       - run:
           name: Query new DB
           command: |
-            docker-compose run client_postgres \
-              psql -h server_postgres -p 5432 findata -U postgres -w postgres \
+            docker-compose run client \
+              psql -h server -p 5432 findata -U postgres -w postgres \
               --command="\l"
 
   deploy:
@@ -78,17 +77,17 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - build
+      - integration-postgres
+      - build:
+          requires:
+            - integration-postgres
       - smoke-scraper:
           requires:
             - build
       - smoke-loader:
           requires:
             - build
-      - integration-postgres:
+      - deploy:
           requires:
             - smoke-scraper
             - smoke-loader
-      - deploy:
-          requires:
-            - integration-postgres

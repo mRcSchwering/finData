@@ -1,10 +1,19 @@
-version: '3'
+version: '2'
+
 services:
-  server_postgres:
+  server:
     image: postgres:9.5.12-alpine
-    ports:
-      - '5432:5432'
-  client_postgres:
+    networks:
+      - internal
+    expose:
+      - '5432'
+  client:
     image: mrcschwering/psql-client:latest
+    networks:
+      - internal
     depends_on:
-        - server_postgres
+        - server
+
+networks:
+  internal:
+    driver: bridge

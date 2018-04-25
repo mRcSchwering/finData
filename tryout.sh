@@ -1,4 +1,4 @@
-# TODO mit docker-compose container für integration orchestrieren
+# TODO network explizit definieren wie (https://jbrandhorst.com/post/circleci-docker-compose/)
 
 
 # damit starte ich container,networks,volumes
@@ -23,11 +23,17 @@ sudo docker-compose run client_postgres sh
 sudo docker-compose run client_postgres \
   createdb -h server_postgres -p 5432 findata -U postgres -w postgres
 
+sudo docker-compose run client \
+  createdb -h server -p 5432 findata -U postgres -w postgres
+
 # check it out
-sudo docker-compose run client_postgres \
-  psql -h server_postgres -p 5432 findata -U postgres -w postgres \
+sudo docker-compose run client \
+  psql -h server -p 5432 findata -U postgres -w postgres \
   --command="\l"
 
+
+
+sudo docker-compose exec client sh
 
 
 
