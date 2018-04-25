@@ -45,6 +45,8 @@ jobs:
             docker-compose up -d
             docker-compose ps
             docker network ls
+            docker inspect project_client_1
+            docker inspect project_server_1
       - run:
           name: Create a new DB
           command: |
