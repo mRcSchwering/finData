@@ -111,7 +111,7 @@ The login is quite straight forward.
 I have to define host, port and so on, but it looks like using psql.
 
 ```
-conn = psycopg2.connect("dbname=findata user=postgres password=postgres host=127.0.0.1 port=5432")
+conn = psycopg2.connect(dbname="findata", user="postgres", host="127.0.0.1", port="5432")
 with conn:
     with conn.cursor() as curs:
         curs.execute("""CREATE ...""", data)
@@ -142,6 +142,8 @@ TODO: There is also Two-Phase Commit support... I should use that at some point.
 ```
 sudo docker stop "$PG_NAME"
 ```
+
+
 
 # Troubleshooting
 

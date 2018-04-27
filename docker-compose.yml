@@ -1,19 +1,19 @@
 version: '2'
 
 services:
+
   server:
     image: postgres:9.5.12-alpine
-    networks:
-      - internal
     expose:
       - '5432'
+
   client:
-    image: mrcschwering/psql-client:latest
-    networks:
-      - internal
+    build:
+      context: _docker/python-slim-psql/
     depends_on:
         - server
 
-networks:
-  internal:
-    driver: bridge
+  app:
+    image: mrcschwering/cci-findata_build:latest
+    depends_on:
+        - server

@@ -1,5 +1,8 @@
 # TODO network explizit definieren wie (https://jbrandhorst.com/post/circleci-docker-compose/)
 
+# letzter versuch mit docker compose image
+
+
 
 # damit starte ich container,networks,volumes
 # docker-compose erstellt automatisch ein docker network wo alle

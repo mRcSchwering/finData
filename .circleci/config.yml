@@ -6,8 +6,7 @@ jobs:
       - image: docker:18.03.0-ce-git
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 17.11.0-ce
+      - setup_remote_docker
       - run:
           name: Build finData
           command: docker build -t "mrcschwering/cci-findata_build:latest" .
@@ -31,41 +30,39 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s test -v -p "*test_load*"
 
-  integration-postgres:
+  integration-tests:
     docker:
-      - image: mrcschwering/docker-compose:18.03.0-ce-git
-    environment:
-      PG_NAME: "postgres_server"
+      - image: docker:18.03.0-ce-git
     steps:
       - checkout
       - setup_remote_docker
       - run:
-          name: Start server and client containers
+          name: Install docker-compose
+          command: |
+            apk --update add py2-pip
+            pip install docker-compose
+            docker-compose --version
+      - run:
+          name: Start Container
           command: |
             docker-compose up -d
+            sleep 5
             docker-compose ps
-            docker network ls
-            docker inspect project_client_1
-            docker inspect project_server_1
       - run:
-          name: Create a new DB
+          name: Create DB using psql client
           command: |
-            docker-compose run client \
-              createdb -h server -p 5432 findata -U postgres -w postgres
+            docker-compose run client createdb -h server -p 5432 findata -U postgres
       - run:
-          name: Query new DB
+          name: Check DB using psql client
           command: |
-            docker-compose run client \
-              psql -h server -p 5432 findata -U postgres -w postgres \
-              --command="\l"
+            docker-compose run client psql -h server -p 5432 -U postgres -c "\l"
 
   deploy:
     docker:
       - image: docker:18.03.0-ce-git
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 17.11.0-ce
+      - setup_remote_docker
       - run:
           name: Build tested finData
           command: docker build -t "mrcschwering/cci-findata_deploy:latest" .
@@ -79,17 +76,17 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - integration-postgres
-      - build:
-          requires:
-            - integration-postgres
+      - build
       - smoke-scraper:
           requires:
             - build
       - smoke-loader:
           requires:
             - build
-      - deploy:
+      - integration-tests:
           requires:
             - smoke-scraper
             - smoke-loader
+      - deploy:
+          requires:
+            - integration-tests
