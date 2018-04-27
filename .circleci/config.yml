@@ -51,11 +51,12 @@ jobs:
       - run:
           name: Create DB using psql client
           command: |
-            docker-compose run client createdb -h server -p 5432 findata -U postgres
+            docker-compose run client "CREATE DATABASE findata;"
+            docker-compose run client "\l"
       - run:
-          name: Check DB using psql client
+          name: Check DB using app
           command: |
-            docker-compose run client psql -h server -p 5432 -U postgres -c "\l"
+            python3 -m finData.scrape
 
   deploy:
     docker:

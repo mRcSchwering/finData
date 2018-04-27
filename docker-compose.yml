@@ -9,11 +9,11 @@ services:
 
   client:
     build:
-      context: _docker/python-slim-psql/
+      context: _docker/psql-client/
     depends_on:
         - server
 
-  app:
-    image: mrcschwering/cci-findata_build:latest
-    depends_on:
-        - server
+  # app:
+  #   image: mrcschwering/cci-findata_build:latest
+  #   depends_on:
+  #       - server
