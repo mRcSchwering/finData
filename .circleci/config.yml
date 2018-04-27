@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Check DB using app
           command: |
-            python3 -m finData.scrape
+            docker-compose run app python3 -m finData.scrape
 
   deploy:
     docker:
