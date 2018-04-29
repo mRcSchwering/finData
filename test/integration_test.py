@@ -20,8 +20,7 @@ def main():
             cur.execute("""SELECT datname FROM pg_database""")
             res = cur.fetchall()
             print(res)
-            fd = [d[0] for d in res if d[0] == 'findata']
-            assert len(fd) == 1
+            assert len([d[0] for d in res if d[0] == 'findata']) == 1
     conn.close()
 
     [d[0] for d in data if d[0] == 'findata']
