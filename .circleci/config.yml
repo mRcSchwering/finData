@@ -2,6 +2,8 @@ version: 2
 jobs:
 
   build:
+    environment:
+      build: mrcschwering/cci-findata_build:latest
     docker:
       - image: docker:18.03.0-ce-git
     steps:
@@ -9,7 +11,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Build finData
-          command: docker build -t "mrcschwering/cci-findata_build:latest" .
+          command: docker build -t "$build" .
       - run:
           name: Push finData build
           command: |
@@ -17,18 +19,21 @@ jobs:
             docker push "mrcschwering/cci-findata_build:latest"
 
   smoke-scraper:
-    working_directory: /app
+    environment:
+      build: mrcschwering/cci-findata_build:latest
     docker:
-      - image: mrcschwering/cci-findata_build:latest
+      - image: docker:18.03.0-ce-git
     steps:
-      - run: unittest discover -s test -v -p "*test_scrape*"
+      - run: docker run "$build" unittest discover -s test -v -p "*test_scrape*"
 
   smoke-loader:
+    environment:
+      build: mrcschwering/cci-findata_build:latest
     docker:
       - image: docker:18.03.0-ce-git
     steps:
       - setup_remote_docker
-      - run: docker run mrcschwering/cci-findata_build:latest unittest discover -s test -v -p "*test_load*"
+      - run: docker run "$build" unittest discover -s test -v -p "*test_load*"
 
   integration-tests:
     docker:
@@ -59,19 +64,24 @@ jobs:
             docker-compose run app test.integration_test
 
   deploy:
+    environment:
+      build: mrcschwering/cci-findata_build:latest
+      deploy: "mrcschwering/cci-findata_deploy:latest"
     docker:
       - image: docker:18.03.0-ce-git
     steps:
       - checkout
       - setup_remote_docker
       - run:
-          name: Build tested finData
-          command: docker build -t "mrcschwering/cci-findata_deploy:latest" .
+          name: Pull and tag tested image
+          command: |
+            docker pull "$build"
+            docker tag "$build" "$deploy"
       - run:
           name: Push tested finData
           command: |
             docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
-            docker push "mrcschwering/cci-findata_deploy:latest"
+            docker push "$deploy"
 
 workflows:
   version: 2
