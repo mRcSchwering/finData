@@ -19,22 +19,18 @@ jobs:
             docker push "mrcschwering/cci-findata_build:latest"
 
   smoke-scraper:
-    environment:
-      build: mrcschwering/cci-findata_build:latest
     docker:
-      - image: docker:18.03.0-ce-git
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
     steps:
-      - setup_remote_docker
-      - run: docker run "$build" unittest discover -s test -v -p "*test_scrape*"
+      - run: python3 -m unittest discover -s test -v -p "*test_scrape*"
 
   smoke-loader:
-    environment:
-      build: mrcschwering/cci-findata_build:latest
     docker:
-      - image: docker:18.03.0-ce-git
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
     steps:
-      - setup_remote_docker
-      - run: docker run "$build" unittest discover -s test -v -p "*test_load*"
+      - run: python3 -m unittest discover -s test -v -p "*test_load*"
 
   integration-tests:
     docker:
