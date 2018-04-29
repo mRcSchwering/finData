@@ -23,8 +23,6 @@ def main():
             assert len([d[0] for d in res if d[0] == 'findata']) == 1
     conn.close()
 
-    [d[0] for d in data if d[0] == 'findata']
-
 
 if __name__ == "__main__":
     main()
