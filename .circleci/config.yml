@@ -21,14 +21,13 @@ jobs:
     docker:
       - image: mrcschwering/cci-findata_build:latest
     steps:
-      - run: python3 -m unittest discover -s test -v -p "*test_scrape*"
+      - run: unittest discover -s test -v -p "*test_scrape*"
 
   smoke-loader:
-    working_directory: /app
     docker:
       - image: mrcschwering/cci-findata_build:latest
     steps:
-      - run: python3 -m unittest discover -s test -v -p "*test_load*"
+      - run: unittest discover -s test -v -p "*test_load*"
 
   integration-tests:
     docker:
@@ -54,9 +53,9 @@ jobs:
             docker-compose run client "CREATE DATABASE findata;"
             docker-compose run client "\l"
       - run:
-          name: Check DB using app
+          name: Run Integration Tests
           command: |
-            docker-compose run app python3 -m finData.scrape
+            docker-compose run app test.integration_test
 
   deploy:
     docker:

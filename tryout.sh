@@ -1,7 +1,9 @@
-# TODO network explizit definieren wie (https://jbrandhorst.com/post/circleci-docker-compose/)
+# TODO: testfile für die integration tests
+# TODO: mal wieder aufräumen
+# TODO: circleci cache für zB das docker-compose oder das psql image
 
-# letzter versuch mit docker compose image
-
+# TODO: doc actualisieren
+# TODO: überlegen ob für deploy ein entryoint sinnvoll ist
 
 
 # damit starte ich container,networks,volumes

@@ -312,18 +312,3 @@ class Scraper(object):
 
 
 # TODO gucken welche Ticker die richtigen sind, notieren wie ich das raus kriege
-
-
-# übergangslösung: module methode um connection zu checken (auf package eben eght nicht)
-def main():
-    import psycopg2 as pg
-    conn = pg.connect(dbname="findata", user="postgres", host="server", port="5432")
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("""SELECT datname FROM pg_database""")
-            print(cur.fetchall())
-    conn.close()
-
-
-if __name__ == "__main__":
-    main()
