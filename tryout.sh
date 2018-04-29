@@ -1,9 +1,8 @@
-# TODO: testfile für die integration tests
 # TODO: mal wieder aufräumen
 # TODO: circleci cache für zB das docker-compose oder das psql image
 
 # TODO: doc actualisieren
-# TODO: überlegen ob für deploy ein entryoint sinnvoll ist
+
 
 
 # damit starte ich container,networks,volumes
