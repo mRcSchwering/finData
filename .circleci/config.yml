@@ -25,9 +25,10 @@ jobs:
 
   smoke-loader:
     docker:
-      - image: mrcschwering/cci-findata_build:latest
+      - image: docker:18.03.0-ce-git
     steps:
-      - run: unittest discover -s test -v -p "*test_load*"
+      - setup_remote_docker
+      - run: docker run mrcschwering/cci-findata_build:latest unittest discover -s test -v -p "*test_load*"
 
   integration-tests:
     docker:
