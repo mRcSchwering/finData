@@ -24,6 +24,7 @@ jobs:
     docker:
       - image: docker:18.03.0-ce-git
     steps:
+      - setup_remote_docker
       - run: docker run "$build" unittest discover -s test -v -p "*test_scrape*"
 
   smoke-loader:
