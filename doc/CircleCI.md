@@ -5,15 +5,13 @@ you have to use a docker-in-docker setup in CircleCI (at least in the free one).
 
 Basically define a _job_ starting with a docker image that has docker installed,
 add your app, build a new docker image within that docker image, then push the
-new image to _docker hub_ (or so).
+new image to _docker hub_.
 Then you can define _jobs_ using that image as base image.
 
 ### Docker-In-Docker in CircleCI
 
-To avoid conflicts using docker commands within a docker container
-(which in turn was started by some host using the same docker commands)
-CircleCI added a `setup_remote_docker` configuration.
-So the following seems to work fine together:
+You have to tell docker to use the remote socker (from circleci).
+There is a `setup_remote_docker` configuration for this.
 
 ```
 version: 2
@@ -21,19 +19,17 @@ jobs:
 
   build:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: docker:18.03.0-ce-git
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 17.11.0-ce
+      - setup_remote_docker
       - run: ...
 ```
 
-### Push Build to Dockerhub (or so)
+### Push Build to Dockerhub
 
 Next the image is build with whatever procedure.
 To use the image later on it must be `push`ed to some **public** repository.
-I'd say docker hub is an obvious choice.
 Somewhere in the _project_ settings in the CircleCI UI you can set
 secret environment variables for your password (_e.g._ `$DOCKERHUB_PASS`).
 
@@ -43,11 +39,10 @@ jobs:
 
   build:
     docker:
-      - image: docker:17.05.0-ce-git
+      - image: docker:18.03.0-ce-git
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 17.11.0-ce
+      - setup_remote_docker
       - run:
           name: Build myApp
           command: docker build -t "myName/cci-myApp_build:latest" .
@@ -58,31 +53,33 @@ jobs:
             docker push "myName/cci-myApp_build:latest"
 ```
 
-### Use Build as Base Image
+Circleci provides different options for caching and/or persisting an
+environment but (at least in the free version) it is faster and
+more straight forward to push/pull to a repo.
 
-Finally the image can be used as base image for all following _jobs_.
+# Integration Tests
+
+The easiest solution is to use docker-compose-in-docker.
+So, a docker executor job that also has `docker-compose` and that starts
+containers within a docker network.
+
+### Docker-compose-in-Docker
+
+We start with the usual `docker:18.03.0-ce-git`, install `docker-compose` on
+top and set the remote docker socket.
+It turned out that alpine doesn't like the `docker-compose` binary.
+So unfortunately you end up with a base image like this.
 
 ```
-version: 2
-jobs:
-
-  build:
-    ...
-
-  smoke:
-    working_directory: /app
-    docker:
-      - image: myName/cci-myApp_build:latest
-    steps:
-      - run: python3 -m unittest discover -s test -v
-    ...
-
-  workflows:
-    version: 2
-    build_and_test:
-      jobs:
-        - build
-        - smoke-scraper:
-            requires:
-              - build
+FROM docker:18.03.0-ce-git
+RUN apk --update add py2-pip
+RUN pip install docker-compose
 ```
+
+### Integration Test
+
+Next, start your docker containers within their network with
+`docker-compose up -d` and let them talk to each other.
+Remember, the _server_ container probably needs a while to start up,
+so let the _client_ container `sleep 5` or so before it starts to talk
+to the server.

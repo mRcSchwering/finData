@@ -39,7 +39,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Start Container
+          name: Start Containers
           command: |
             docker-compose up -d
             sleep 5
@@ -64,12 +64,12 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Pull and tag tested image
+          name: Pull and tag tested image as deploy
           command: |
             docker pull "$build"
             docker tag "$build" "$deploy"
       - run:
-          name: Push tested finData
+          name: Push deploy
           command: |
             docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
             docker push "$deploy"
