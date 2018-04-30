@@ -8,8 +8,7 @@ services:
       - '5432'
 
   client:
-    build:
-      context: _docker/psql-client/
+    image: mrcschwering/psql-client:latest
     depends_on:
         - server
 

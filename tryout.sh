@@ -5,6 +5,10 @@
 
 
 
+# v1: 02:10
+
+
+
 # damit starte ich container,networks,volumes
 # docker-compose erstellt automatisch ein docker network wo alle
 # container in der docker-compose.yml direkt drinnen sind
