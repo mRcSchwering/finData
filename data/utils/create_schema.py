@@ -2,16 +2,19 @@
 import psycopg2
 from psycopg2.extensions import AsIs
 
-schema_name = 'findata_init'
-conn_string = 'dbname=findata user=postgres password=postgres host=127.0.0.1 port=5432'
 
-
-def main():
-    conn = psycopg2.connect(conn_string)
+def create_schema(db_name, schema_name, user, host, port, password=""):
+    if password == "":
+        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port)
+    else:
+        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port, password=password)
 
     with conn:
-        with conn.cursor() as curs:
-                curs.execute("""
+        with conn.cursor() as cur:
+                cur.execute("""CREATE SCHEMA IF NOT EXISTS %(schema_name)s""",
+                            {'schema_name': AsIs(schema_name)})
+
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.stock (
                       id          INTEGER PRIMARY KEY,
                       name        VARCHAR(50) NOT NULL,
@@ -24,7 +27,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.guv (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -38,7 +41,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.bilanz (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -56,7 +59,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.kennza (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -72,7 +75,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.rentab (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -84,7 +87,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.person (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -96,7 +99,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.marktk (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -106,7 +109,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.divid (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -117,7 +120,7 @@ def main():
                     );
                 """, {'schema_name': AsIs(schema_name)})
 
-                curs.execute("""
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS %(schema_name)s.hist (
                       id          INTEGER PRIMARY KEY,
                       stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
@@ -136,5 +139,13 @@ def main():
     conn.close()
 
 
-if __name__ == '__main__':
-    main()
+def drop_schema(db_name, schema_name, user, host, port, password=""):
+    if password == "":
+        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port)
+    else:
+        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port, password=password)
+
+    with conn:
+        with conn.cursor() as cur:
+                cur.execute("""DROP SCHEMA IF EXISTS %(schema_name)s CASCADE""",
+                            {'schema_name': AsIs(schema_name)})
