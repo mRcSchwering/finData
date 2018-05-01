@@ -3,12 +3,7 @@ import psycopg2
 from psycopg2.extensions import AsIs
 
 
-def create_schema(db_name, schema_name, user, host, port, password=""):
-    if password == "":
-        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port)
-    else:
-        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port, password=password)
-
+def schema_init(schema_name, conn):
     with conn:
         with conn.cursor() as cur:
                 cur.execute("""CREATE SCHEMA IF NOT EXISTS %(schema_name)s""",
@@ -137,15 +132,3 @@ def create_schema(db_name, schema_name, user, host, port, password=""):
                 """, {'schema_name': AsIs(schema_name)})
 
     conn.close()
-
-
-def drop_schema(db_name, schema_name, user, host, port, password=""):
-    if password == "":
-        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port)
-    else:
-        conn = psycopg2.connect(dbname=db_name, user=user, host=host, port=port, password=password)
-
-    with conn:
-        with conn.cursor() as cur:
-                cur.execute("""DROP SCHEMA IF EXISTS %(schema_name)s CASCADE""",
-                            {'schema_name': AsIs(schema_name)})

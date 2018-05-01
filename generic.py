@@ -2,55 +2,6 @@
 import finData.scrape as fDs
 
 
-
-# DB schema bauen
-import psycopg2
-from psycopg2.extensions import AsIs
-
-conn = psycopg2.connect("dbname=findata user=postgres password=postgres host=127.0.0.1 port=5432")
-cur = conn.cursor()
-cur.execute("""
-    CREATE TABLE IF NOT EXISTS %(schema_name)s.%(table_name)s (
-      id          INTEGER PRIMARY KEY,
-      name        VARCHAR(50) NOT NULL,
-      isin        VARCHAR(50) UNIQUE NOT NULL,
-      wkn         VARCHAR(50) UNIQUE NOT NULL,
-      typ         VARCHAR(10) NOT NULL,
-      currency    VARCHAR(5) NOT NULL,
-      boerse_name VARCHAR(50) UNIQUE NOT NULL,
-      avan_ticker VARCHAR(50) UNIQUE NOT NULL
-    );
-""", {'schema_name': AsIs('findata_init'), 'table_name': AsIs('stock')})
-conn.commit()
-cur.close()
-conn.close()
-
-
-conn = psycopg2.connect("dbname=findata user=postgres password=postgres host=127.0.0.1 port=5432")
-with conn:
-    with conn.cursor() as curs:
-            curs.execute("""
-                CREATE TABLE IF NOT EXISTS %(schema_name)s.%(table_name)s (
-                  id          INTEGER PRIMARY KEY,
-                  name        VARCHAR(50) NOT NULL,
-                  isin        VARCHAR(50) UNIQUE NOT NULL,
-                  wkn         VARCHAR(50) UNIQUE NOT NULL,
-                  typ         VARCHAR(10) NOT NULL,
-                  currency    VARCHAR(5) NOT NULL,
-                  boerse_name VARCHAR(50) UNIQUE NOT NULL,
-                  avan_ticker VARCHAR(50) UNIQUE NOT NULL
-                );
-            """, {'schema_name': AsIs('findata_init'), 'table_name': AsIs('stock')})
-conn.close()
-
-
-
-
-
-
-
-# python3 -m unittest discover -s test -v
-
 DAX = [
     {
         'name': 'Adidas',
@@ -60,24 +11,6 @@ DAX = [
         'currency': 'EUR',
         'boerse_name': 'Adidas-Aktie',
         'avan_ticker': 'ADS.DE'
-    },
-    {
-        'name': 'Alianz',
-        'typ': 'Aktie',
-        'wkn': '840400',
-        'isin': 'DE0008404005',
-        'currency': 'EUR',
-        'boerse_name': 'Allianz-Aktie',
-        'avan_ticker': 'ALV.DE'
-    },
-    {
-        'name': 'BASF',
-        'typ': 'Aktie',
-        'wkn': 'BASF11',
-        'isin': 'DE000BASF111',
-        'currency': 'EUR',
-        'boerse_name': 'BASF-Aktie',
-        'avan_ticker': 'BAS.DE'
     },
     {
         'name': 'Bayer',
@@ -116,24 +49,6 @@ DAX = [
         'avan_ticker': 'CBK.DE'
     },
     {
-        'name': 'Continental',
-        'typ': 'Aktie',
-        'wkn': '543900',
-        'isin': 'DE0005439004',
-        'currency': 'EUR',
-        'boerse_name': 'Continental-Aktie',
-        'avan_ticker': 'CON.DE'
-    },
-    {
-        'name': 'Daimler',
-        'typ': 'Aktie',
-        'wkn': '710000',
-        'isin': 'DE0007100000',
-        'currency': 'EUR',
-        'boerse_name': 'Daimler-Aktie',
-        'avan_ticker': 'DAI.DE'
-    },
-    {
         'name': 'Deutsche Bank',
         'typ': 'Aktie',
         'wkn': '514000',
@@ -153,27 +68,28 @@ DAX = [
     }
 ]
 
-import finData
-import finData.scrape as fDs
-len(DAX)
-i = 0
-aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'], DAX[i]['isin'],
-                    DAX[i]['currency'], DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
+data = []
+for i in range(len(DAX)):
+    aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
+                        DAX[i]['isin'], DAX[i]['currency'],
+                        DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
+    aktie.getDividendTable()
+    aktie.getFundamentalTables()
+    aktie.getHistoricPrices()
+    data.append({
+        "guv": aktie.get('guv'),
+        "bilanz": aktie.get('bilanz'),
+        "kennza": aktie.get('kennza'),
+        "rentab": aktie.get('rentab'),
+        "person": aktie.get('person'),
+        "marktk": aktie.get('marktk'),
+        "divid": aktie.get('divid'),
+        "hist": aktie.get('hist')
+    })
+d = data[2]
+type(d.get("hist"))
+d.get("hist").get("data")
 
-
-aktie.getDividendTable()
-aktie.getFundamentalTables()
-aktie.getHistoricPrices()
-
-x = aktie.get('guv')
-x = aktie.get('bilanz')
-x = aktie.get('kennza')
-x = aktie.get('rentab')
-x = aktie.get('person')
-x = aktie.get('marktk')
-x = aktie.get('divid')
-x = aktie.get('hist')
-
-x.keys()
-x['colnames']
-x['rownames']
+# TODO: multiple insert (https://stackoverflow.com/questions/8134602/psycopg2-insert-multiple-rows-with-one-query)
+# TODO: Daten convertieren und in DB schreiben
+# TODO: Daten irgendwie abspeichern (fürs repo)

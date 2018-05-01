@@ -12,74 +12,76 @@ VOL_NAME="postgres_data"
 
 # argument
 if [ $1 ]; then
+  case $1 in
 
-# test
-  if [ "$1" = "test" ]; then
-    printf "Running tests...\n"
-    if  [ $2 ]; then
-      printf "looking for tests with '*test_$2*'...\n\n"
-      python3 -m unittest discover -s test -v -p "*test_$2*"
-    else
-      printf "running all tests ...\n\n"
-      python3 -m unittest discover -s test -v
-    fi
-  fi
+    # test
+    test)
+      printf "Running tests...\n"
+      if  [ $2 ]; then
+        printf "looking for tests with '*test_$2*'...\n\n"
+        python3 -m unittest discover -s test -v -p "*test_$2*"
+      else
+        printf "running all tests ...\n\n"
+        python3 -m unittest discover -s test -v
+      fi
+      ;;
 
-  # start
-  if [ "$1" = "start" ]; then
-    if [ $2 ] && [ $2 = "server" ]; then
-      printf "Starting server $PG_NAME with attached volume $VOL_NAME...\n"
-      printf "need root\n"
-      sudo docker run \
-        --rm -d \
-        --name="$PG_NAME" \
-        --hostname="$PG_NAME" \
-        -v "$VOL_NAME":/var/lib/postgresql/data \
-        -p 5432:5432 \
-        postgres:9.5.12-alpine
-      printf "\n... server started\n"
-      printf "Reach via '-h 127.0.0.1 -p 5432 -U postgres'\n\n"
-    fi
-  fi
+    # start
+    start)
+      if [ $2 ] && [ $2 = "server" ]; then
+        printf "Starting server $PG_NAME with attached volume $VOL_NAME...\n"
+        printf "need root\n"
+        sudo docker run \
+          --rm -d \
+          --name="$PG_NAME" \
+          --hostname="$PG_NAME" \
+          -v "$VOL_NAME":/var/lib/postgresql/data \
+          -p 5432:5432 \
+          postgres:9.5.12-alpine
+        printf "\n... server started\n"
+        printf "Reach via '-h 127.0.0.1 -p 5432 -U postgres'\n\n"
+      fi
+      ;;
 
-  # stop
-  if [ "$1" = "stop" ]; then
-    if [ $2 ] && [ $2 = "server" ]; then
-      printf "Stopping server $PG_NAME\n"
-      printf "need root\n"
-      sudo docker stop "$PG_NAME"
-    fi
-  fi
+    # stop
+    stop)
+      if [ $2 ] && [ $2 = "server" ]; then
+        printf "Stopping server $PG_NAME\n"
+        printf "need root\n"
+        sudo docker stop "$PG_NAME"
+      fi
+      ;;
 
-  # create
-  if [ "$1" = "create" ]; then
-    if [ $2 ]; then
-      printf "Creating $2 in database $DB_NAME\n"
-      printf "hopefully you already started the server\n\n"
-      python3 -m data.create_testdatabase \
-        --db "$DB_NAME" \
-        --schema "$2" \
-        --host "127.0.0.1" \
-        --port "5432" \
-        --user "postgres"
-      printf "$2 created\n\n"
-    fi
-  fi
+    # create
+    create)
+      if [ $2 ]; then
+        printf "Creating $2 in database $DB_NAME\n"
+        printf "hopefully you already started the server\n\n"
+        python3 -m data.create_testdatabase \
+          --db "$DB_NAME" \
+          --schema "$2" \
+          --host "127.0.0.1" \
+          --port "5432" \
+          --user "postgres"
+        printf "$2 created\n\n"
+      fi
+      ;;
 
-  # drop
-  if [ "$1" = "drop" ]; then
-    if [ $2 ]; then
-      printf "Dropping $2 in database $DB_NAME\n"
-      printf "hopefully you already started the server\n\n"
-      python3 -m data.create_testdatabase \
-        --db "$DB_NAME" \
-        --schema "$2" \
-        --host "127.0.0.1" \
-        --port "5432" \
-        --user "postgres" \
-        --drop
-    fi
-  fi
+    # drop
+    drop)
+      if [ $2 ]; then
+        printf "Dropping $2 in database $DB_NAME\n"
+        printf "hopefully you already started the server\n\n"
+        python3 -m data.create_testdatabase \
+          --db "$DB_NAME" \
+          --schema "$2" \
+          --host "127.0.0.1" \
+          --port "5432" \
+          --user "postgres" \
+          --drop
+      fi
+      ;;
+  esac
 
 # no argument
 else

@@ -1,19 +1,30 @@
 # This Python file uses the following encoding: utf-8
-from data.utils.create_schema import create_schema
-from data.utils.create_schema import drop_schema
+from data.schemata.schema_init import schema_init as schema  # the current schema
+from psycopg2.extensions import AsIs
+import psycopg2
 import argparse
 
 
-def create(db_name, schema_name, user, host, port, password=""):
+def connector(dbname, user, host, port, password=""):
+    if password == "":
+        return psycopg2.connect(dbname=dbname, user=user, host=host, port=port)
+    else:
+        return psycopg2.connect(dbname=dbname, user=user, host=host, port=port, password=password)
+
+
+def create(db_name, schema_name, user, host, port, password):
     print("Creating schema...")
-    create_schema(db_name=db_name, schema_name=schema_name,
-                  user=user, host=host, port=port, password=password)
+    conn = connector(dbname=db_name, user=user, host=host, port=port, password=password)
+    schema(schema_name=schema_name, conn=conn)
 
 
-def drop(db_name, schema_name, user, host, port, password=""):
+def drop(db_name, schema_name, user, host, port, password):
     print("Dropping schema...")
-    drop_schema(db_name=db_name, schema_name=schema_name,
-                user=user, host=host, port=port, password=password)
+    conn = connector(dbname=db_name, user=user, host=host, port=port, password=password)
+    with conn:
+        with conn.cursor() as cur:
+                cur.execute("""DROP SCHEMA IF EXISTS %(schema_name)s CASCADE""",
+                            {'schema_name': AsIs(schema_name)})
 
 
 if __name__ == '__main__':
