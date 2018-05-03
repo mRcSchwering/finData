@@ -3,3 +3,5 @@ lxml
 requests
 datetime
 psycopg2-binary
+argparse
+pandas

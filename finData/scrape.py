@@ -10,6 +10,7 @@ import json
 import requests
 import datetime as dt
 from bs4 import BeautifulSoup
+import pandas as pd
 
 
 class Scraper(object):
@@ -44,18 +45,16 @@ class Scraper(object):
         self.alphavantage_api_key = self._configure_api()
         self.isTest = isTest
 
-    def getFundamentalTables(self, returnTables=False,
-                             ids=['guv', 'bilanz', 'kennzahlen',
-                                  'rentabilitaet', 'personal'],
+    def _getTables(self, url):
+        return requests.get(url).content
+
+    def getFundamentalTables(self,
+                             ids=['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
                              texts=['Marktkapitalisierung']):
         """Scrape fundamental data tables from boerse.de
         given h3 Ids or h3 text search strings"""
         tabDict = {}
-
-        if self.isTest:
-            req = self._getTestData('fund')
-        else:
-            req = requests.get(self.fund_url).content
+        req = self._getTables(self.fund_url)
         soup = BeautifulSoup(req, 'lxml')
 
         for id in ids:
@@ -79,10 +78,8 @@ class Scraper(object):
         utab = self._decode(out)
         self.fund_tables = self._guessTypes(utab)
         self.existingTables.extend(self.fund_tables.keys())
-        if returnTables:
-            return self.fund_tables
 
-    def getDividendTable(self, returnTable=False, text='Dividenden'):
+    def getDividendTable(self, text='Dividenden'):
         """Scrape dividend table from boerse.de
         given a h3 text search string"""
 
@@ -101,10 +98,8 @@ class Scraper(object):
         utab = self._decode(btab)
         self.divid_table = self._guessTypes(utab)
         self.existingTables.append('divid')
-        if returnTable:
-            return self.divid_table
 
-    def getHistoricPrices(self, returnTable=False):
+    def getHistoricPrices(self):
         query = {
             'function': 'TIME_SERIES_DAILY_ADJUSTED',
             'symbol': self.avan_ticker,
@@ -116,8 +111,56 @@ class Scraper(object):
         if returnTable:
             return self.hist_table
 
+    def _getKennza(self, key='kennza'):
+        colMap = [
+            ['gewinn_verw', 'verwaessert'], ['gewinn_unvw', 'unverwaessert'],
+            ['umsatz', 'umsatz'], ['buchwert', 'buchwert'], ['dividende', 'dividende'],
+            ['KGV', 'kgv'], ['KBV', 'kbvbuchwert'], ['KUV', 'kuvumsatz']
+        ]
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().replace('ä', 'ae').replace(' ', '')
+            r = r.replace('jeaktie', '').replace('gewinn', '').replace('(', '').replace(')', '')
+            r = r.replace('kurs-', '').replace('-verhaeltnis', '')
+            k = [c[0] for c in colMap if c[1] == r][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + [c[0] for c in colMap]]
+        return df.apply(pd.to_numeric)
+
+    def _getGUV(self, key='guv'):
+        cols = ['umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena']
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().replace('ü', 'ue')
+            k = [c for c in cols if re.search(c.lower(), r)][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + cols]
+        return df.apply(pd.to_numeric)
+
+    def _getBilanz(self, key='bilanz'):
+        colMap = [
+            ['umlaufvermo', 'umlaufvermoegen'], ['anlagevermo', 'anlagevermoegen'],
+            ['sum_aktiva', 'aktiva'], ['kurzfr_verb', 'kurzfristige'], ['langfr_verb', 'langfristige'],
+            ['gesamt_verb', 'gesamt'], ['eigenkapita', 'eigenkapital'], ['sum_passiva', 'passiva'],
+            ['eigen_quote', 'eigenkapitalquote'], ['fremd_quote', 'fremdkapitalquote']
+        ]
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().replace('ö', 'oe').replace(' ', '')
+            r = r.replace('verbindlichkeiten', '').replace('summe', '')
+            k = [c[0] for c in colMap if c[1] == r][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + [c[0] for c in colMap]]
+        return df.apply(pd.to_numeric)
+
     def get(self, key):
-        """preferred way to access data of the object"""
+        """Use this method to access the tables"""
         if key not in Scraper.tables:
             raise ValueError('Invalid key, expect one of: %s' % Scraper.tables)
         if key not in self.existingTables:
@@ -127,6 +170,13 @@ class Scraper(object):
             return self.divid_table
         if key == 'hist':
             return self.hist_table
+        if key in ['guv', 'bilanz', 'kennza']:
+            options = {
+                'guv': self._getGUV,
+                'bilanz': self._getBilanz,
+                'kennza': self._getKennza
+            }
+            return options[key]()
         return self.fund_tables[key]
 
     def _resolve_boerse_urls(self):
@@ -142,18 +192,12 @@ class Scraper(object):
         try:
             key = os.environ['ALPHAVANTAGE_API_KEY']
         except KeyError:
-            pass
-        if key != '':
-            return key
-        try:
-            with open('config.json') as ouf:
-                configFile = json.load(ouf)
             try:
+                with open('config.json') as ouf:
+                    configFile = json.load(ouf)
                 key = configFile['ALPHAVANTAGE_API_KEY']
-            except KeyError:
+            except (FileNotFoundError, KeyError):
                 pass
-        except FileNotFoundError:
-            pass
         return key
 
     def _htmlTab2dict(self, tab, hasRownames=True, hasColnames=True,
@@ -309,6 +353,26 @@ class Scraper(object):
                 testdata = json.load(inf)
             return testdata
         raise ValueError('Invalid Testdata')
-
-
-# TODO gucken welche Ticker die richtigen sind, notieren wie ich das raus kriege
+#
+#
+#
+# ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR',
+#        'Adidas-Aktie', 'ADS.DE']
+#
+# a = Scraper(*ads)
+# a.getFundamentalTables()
+#
+# tab = a.get('kennza')
+# list(tab.dtypes)
+# tab = tab.apply(pd.to_numeric)
+#
+# [type(d) for d in l]
+#
+# ['year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena']
+# np.dtype('int64')
+#
+# np.dtype('float64')
+#
+#
+# df.shape
+# 4 * [float]

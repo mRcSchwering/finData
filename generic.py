@@ -1,6 +1,14 @@
+# TODO: erst scrape so weit erweitern, dass länglich daten. am besten pandas
+# TODO: Daten scrapen und als testdaten abspeichern: script bei data/testdata/ speichern
+
+# TODO: create_database.py erweitern, dass testdaten gelesen und in testDB geschrieben werden
+# TODO: multiple insert (https://stackoverflow.com/questions/8134602/psycopg2-insert-multiple-rows-with-one-query)
+
+
 # This Python file uses the following encoding: utf-8
 import finData.scrape as fDs
-
+import json
+import os.path
 
 DAX = [
     {
@@ -67,8 +75,9 @@ DAX = [
         'avan_ticker': 'DB1.DE'
     }
 ]
+DAX = DAX[:1]
 
-data = []
+data = {}
 for i in range(len(DAX)):
     aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
                         DAX[i]['isin'], DAX[i]['currency'],
@@ -76,7 +85,7 @@ for i in range(len(DAX)):
     aktie.getDividendTable()
     aktie.getFundamentalTables()
     aktie.getHistoricPrices()
-    data.append({
+    data[aktie.avan_ticker] = {
         "guv": aktie.get('guv'),
         "bilanz": aktie.get('bilanz'),
         "kennza": aktie.get('kennza'),
@@ -85,11 +94,16 @@ for i in range(len(DAX)):
         "marktk": aktie.get('marktk'),
         "divid": aktie.get('divid'),
         "hist": aktie.get('hist')
-    })
-d = data[2]
-type(d.get("hist"))
-d.get("hist").get("data")
+    }
 
-# TODO: multiple insert (https://stackoverflow.com/questions/8134602/psycopg2-insert-multiple-rows-with-one-query)
-# TODO: Daten convertieren und in DB schreiben
-# TODO: Daten irgendwie abspeichern (fürs repo)
+for key in data['ADS.DE']:
+    data[key]
+
+basepath = "data/testdata"
+ticker = 'ADS.DE' + '.json'
+
+
+
+
+with open(os.path.join(basepath, ticker), 'w') as ouf:
+    json.dump(d, ouf, indent=4, sort_keys=True, default=str)
