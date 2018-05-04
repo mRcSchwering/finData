@@ -22,11 +22,6 @@ class Scraper(object):
                   'CNY', 'JPY', 'KRW', 'RUB']
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
               'marktk', 'divid', 'hist']
-    testFiles = {
-        'fund': 'finData/testdata/fund.html',
-        'divid': 'finData/testdata/divid.html',
-        'hist': 'finData/testdata/hist.json'
-    }
 
     def __init__(self, name, typ, wkn, isin, currency,
                  boerse_name, avan_ticker, isTest=False):
@@ -82,13 +77,8 @@ class Scraper(object):
     def getDividendTable(self, text='Dividenden'):
         """Scrape dividend table from boerse.de
         given a h3 text search string"""
-
-        if self.isTest:
-            req = self._getTestData('divid')
-        else:
-            req = requests.get(self.divid_url).content
+        req = self._getTables(self.divid_url)
         soup = BeautifulSoup(req, 'lxml')
-
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
         try:
             tab = h3.findNext('table')
@@ -159,6 +149,62 @@ class Scraper(object):
         df = df[['year'] + [c[0] for c in colMap]]
         return df.apply(pd.to_numeric)
 
+    def _getRentab(self, key='rentab'):
+        colMap = [
+            ['umsatzren', 'umsatz'], ['eigenkapren', 'eigenkapital'],
+            ['geskapren', 'gesamtkapital'], ['dividren', 'dividenden']
+        ]
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().replace('rendite', '')
+            k = [c[0] for c in colMap if c[1] == r][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + [c[0] for c in colMap]]
+        return df.apply(pd.to_numeric)
+
+    def _getPerson(self, key='person'):
+        colMap = [
+            ['personal', 'personal'], ['aufwand', 'personalaufwand'],
+            ['umsatz', 'umsatz'], ['gewinn', 'gewinn']
+        ]
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().split(' ')[0]
+            k = [c[0] for c in colMap if c[1] == r][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + [c[0] for c in colMap]]
+        return df.apply(pd.to_numeric)
+
+    def _getMarktk(self, key='marktk'):
+        colMap = [
+            ['zahl_aktien', 'anzahl'], ['marktkapita', 'marktkapitalisierung']
+        ]
+        tab = self.fund_tables[key]
+        tmp = {'year': [d for d in tab['colnames']]}
+        for i in range(len(tab['rownames'])):
+            r = tab['rownames'][i].lower().split(' ')[0]
+            k = [c[0] for c in colMap if c[1] == r][0]
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['year'] + [c[0] for c in colMap]]
+        return df.apply(pd.to_numeric)
+
+    def _getDivid(self, key='divid'):
+        cols = ['datum', 'dividende', 'veraenderu', 'rendite']
+        tab = self.divid_table
+        tmp = {}
+        for i in range(len(tab['colnames'])):
+            r = tab['colnames'][i].lower().replace('ä', 'ae')
+            k = [c for c in cols if re.search(c, r)][0]
+            tmp[k] = [d[i] for d in tab['data']]
+        df = pd.DataFrame(tmp)
+        df[cols[1:]] = df[cols[1:]].apply(pd.to_numeric)
+        return df[cols]
+
     def get(self, key):
         """Use this method to access the tables"""
         if key not in Scraper.tables:
@@ -166,18 +212,18 @@ class Scraper(object):
         if key not in self.existingTables:
             raise ValueError('No data exists for this key' +
                              ' existing data: %s' % self.existingTables)
-        if key == 'divid':
-            return self.divid_table
         if key == 'hist':
             return self.hist_table
-        if key in ['guv', 'bilanz', 'kennza']:
-            options = {
-                'guv': self._getGUV,
-                'bilanz': self._getBilanz,
-                'kennza': self._getKennza
-            }
-            return options[key]()
-        return self.fund_tables[key]
+        options = {
+            'guv': self._getGUV,
+            'bilanz': self._getBilanz,
+            'kennza': self._getKennza,
+            'rentab': self._getRentab,
+            'person': self._getPerson,
+            'marktk': self._getMarktk,
+            'divid': self._getDivid
+        }
+        return options[key]()
 
     def _resolve_boerse_urls(self):
         """resolving URLs for boerse.de"""
@@ -353,26 +399,17 @@ class Scraper(object):
                 testdata = json.load(inf)
             return testdata
         raise ValueError('Invalid Testdata')
-#
-#
+
+
 #
 # ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR',
 #        'Adidas-Aktie', 'ADS.DE']
 #
 # a = Scraper(*ads)
-# a.getFundamentalTables()
-#
-# tab = a.get('kennza')
-# list(tab.dtypes)
-# tab = tab.apply(pd.to_numeric)
-#
-# [type(d) for d in l]
-#
-# ['year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena']
-# np.dtype('int64')
-#
-# np.dtype('float64')
+# a.getDividendTable()
+# tab = a.get('divid')
+# tab['colnames']
 #
 #
-# df.shape
-# 4 * [float]
+# df.dtypes
+# [type(d) for d in df.iloc[[0]].values.tolist()[0]]

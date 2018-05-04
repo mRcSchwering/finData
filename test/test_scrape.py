@@ -82,6 +82,51 @@ class GetFundamentalTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], 9 * [float])
         self.assertEqual(df.shape, (9, 9))
+
+    def test_structureOfRentabIsCorrect(self):
+        df = GetFundamentalTables.x.get('rentab')
+        self.assertEqual(list(df),
+                         ['year', 'umsatzren', 'eigenkapren', 'geskapren', 'dividren'])
+        row = df.iloc[[0]].values.tolist()[0]
+        self.assertEqual([type(d) for d in row], 5 * [float])
+        self.assertEqual(df.shape, (9, 5))
+
+    def test_structureOfPersonIsCorrect(self):
+        df = GetFundamentalTables.x.get('person')
+        self.assertEqual(list(df),
+                         ['year', 'personal', 'aufwand', 'umsatz', 'gewinn'])
+        row = df.iloc[[0]].values.tolist()[0]
+        self.assertEqual([type(d) for d in row], 5 * [float])
+        self.assertEqual(df.shape, (9, 5))
+
+    def test_structureOfMarktkIsCorrect(self):
+        df = GetFundamentalTables.x.get('marktk')
+        self.assertEqual(list(df),
+                         ['year', 'zahl_aktien', 'marktkapita'])
+        row = df.iloc[[0]].values.tolist()[0]
+        self.assertEqual([type(d) for d in row], 3 * [float])
+        self.assertEqual(df.shape, (9, 3))
+
+
+class GetDividendTables(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        class X(finData.scrape.Scraper):
+            def _getTables(self, url):
+                with open('finData/testdata/divid.html') as inf:
+                    testdata = inf.read()
+                return bytes(testdata, 'utf-8')
+        cls.x = X(*stockA)
+        cls.x.getDividendTable()
+
+    def test_structureOfDividIsCorrect(self):
+        df = GetDividendTables.x.get('divid')
+        self.assertEqual(list(df),
+                         ['datum', 'dividende', 'veraenderu', 'rendite'])
+        row = df.iloc[[0]].values.tolist()[0]
+        self.assertEqual([type(d) for d in row], [datetime.date] + 3 * [float])
+        self.assertEqual(df.shape, (22, 4))
 #
 #
 # class Test_getDividendTable(unittest.TestCase):
