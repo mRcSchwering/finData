@@ -98,8 +98,6 @@ class Scraper(object):
         res = self._alphavantage_api(query)
         self.hist_table = self._convert_alphavantage(res)
         self.existingTables.append('hist')
-        if returnTable:
-            return self.hist_table
 
     def _getKennza(self, key='kennza'):
         colMap = [
@@ -205,6 +203,27 @@ class Scraper(object):
         df[cols[1:]] = df[cols[1:]].apply(pd.to_numeric)
         return df[cols]
 
+    def _getHist(self, key='hist'):
+        colMap = [
+            ['open', '1. open'], ['high', '2. high'], ['low', '3. low'],
+            ['close', '4. close'], ['adj_close', '5. adjusted close'],
+            ['volume', '6. volume'], ['divid_amt', '7. dividend amount'],
+            ['split_coef', '8. split coefficient']
+        ]
+        tab = self.hist_table
+        tmp = {'datum': [d for d in tab['rownames']]}
+        print(tmp['datum'])
+        for i in range(len(tab['colnames'])):
+            r = tab['colnames'][i].lower()
+            k = [c[0] for c in colMap if c[1] == r][0]
+            print(k)
+            print(len(tab['data'][i]))
+            tmp[k] = tab['data'][i]
+        df = pd.DataFrame(tmp)
+        df = df[['datum'] + [c[0] for c in colMap]]
+        # df[[c[0] for c in colMap]].apply(pd.to_numeric)
+        return df
+
     def get(self, key):
         """Use this method to access the tables"""
         if key not in Scraper.tables:
@@ -212,8 +231,6 @@ class Scraper(object):
         if key not in self.existingTables:
             raise ValueError('No data exists for this key' +
                              ' existing data: %s' % self.existingTables)
-        if key == 'hist':
-            return self.hist_table
         options = {
             'guv': self._getGUV,
             'bilanz': self._getBilanz,
@@ -221,7 +238,8 @@ class Scraper(object):
             'rentab': self._getRentab,
             'person': self._getPerson,
             'marktk': self._getMarktk,
-            'divid': self._getDivid
+            'divid': self._getDivid,
+            'hist': self._getHist
         }
         return options[key]()
 
@@ -355,9 +373,6 @@ class Scraper(object):
             if key not in paramsOpt + paramsReq:
                 raise KeyError('Unused parameter: %s' % key)
             querystrings.append('%s=%s' % (key, query[key]))
-
-        if self.isTest:
-            return self._getTestData('hist')
         res = requests.get(Scraper.alphavantage_api + '?' +
                            '&'.join(querystrings))
 
@@ -388,17 +403,6 @@ class Scraper(object):
             row = content[date]
             rows.append([float(row[i]) for i in colnames])
         return {'rownames': rownames, 'colnames': colnames, 'data': rows}
-
-    def _getTestData(self, which):
-        if which in ['fund', 'divid']:
-            with open(Scraper.testFiles[which]) as inf:
-                testdata = inf.read()
-            return bytes(testdata, 'utf-8')
-        if which in ['hist']:
-            with open(Scraper.testFiles['hist']) as inf:
-                testdata = json.load(inf)
-            return testdata
-        raise ValueError('Invalid Testdata')
 
 
 #

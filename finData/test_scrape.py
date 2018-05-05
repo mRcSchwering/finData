@@ -5,12 +5,11 @@ import datetime
 import math
 import os
 import pandas as pd
+import json
 
-ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR',
-       'Adidas-Aktie', 'ADS.DE']
-bion = ['BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'CHF',
-        'BB-Biotech-Aktie', 'BION.SW']
-stockA = ['Test AG', 'Aktie', 'XXXXX', 'XXXXX', 'EUR', 'abc.de', 'XXX.XX', True]
+ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR', 'Adidas-Aktie', 'ADS.DE']
+bion = ['BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'CHF', 'BB-Biotech-Aktie', 'BION.SW']
+stock = ['Test AG', 'Aktie', 'XXXXX', 'XXXXX', 'EUR', 'abc.de', 'XXX.XX', True]
 
 
 class Constructor(unittest.TestCase):
@@ -51,7 +50,7 @@ class GetFundamentalTables(unittest.TestCase):
                 with open('finData/testdata/fund.html') as inf:
                     testdata = inf.read()
                 return bytes(testdata, 'utf-8')
-        cls.x = X(*stockA)
+        cls.x = X(*stock)
         cls.x.getFundamentalTables()
 
     def test_allTablesAreThere(self):
@@ -66,6 +65,11 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 7 * [float])
         self.assertEqual(df.shape, (9, 7))
 
+    def test_certainGUVvaluesAreCorrect(self):
+        df = GetFundamentalTables.x.get('guv')
+        self.assertAlmostEqual(df['EBIT'].values.tolist()[0], 508)
+        self.assertTrue(math.isnan(df['EBIT'].values.tolist()[1]))
+
     def test_structureOfBilanzIsCorrect(self):
         df = GetFundamentalTables.x.get('bilanz')
         self.assertEqual(list(df),
@@ -75,6 +79,11 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 11 * [float])
         self.assertEqual(df.shape, (9, 11))
 
+    def test_certainBilanzValuesAreCorrect(self):
+        df = GetFundamentalTables.x.get('bilanz')
+        self.assertAlmostEqual(df['eigen_quote'].values.tolist()[0], 0.4249)
+        self.assertTrue(math.isnan(df['eigen_quote'].values.tolist()[1]))
+
     def test_structureOfKennzaIsCorrect(self):
         df = GetFundamentalTables.x.get('kennza')
         self.assertEqual(list(df),
@@ -82,6 +91,11 @@ class GetFundamentalTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], 9 * [float])
         self.assertEqual(df.shape, (9, 9))
+
+    def test_certainKennzaValuesAreCorrect(self):
+        df = GetFundamentalTables.x.get('kennza')
+        self.assertAlmostEqual(df['KGV'].values.tolist()[0], 30.20)
+        self.assertTrue(math.isnan(df['KGV'].values.tolist()[1]))
 
     def test_structureOfRentabIsCorrect(self):
         df = GetFundamentalTables.x.get('rentab')
@@ -91,6 +105,11 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 5 * [float])
         self.assertEqual(df.shape, (9, 5))
 
+    def test_certainRentabValuesAreCorrect(self):
+        df = GetFundamentalTables.x.get('rentab')
+        self.assertAlmostEqual(df['dividren'].values.tolist()[0], 0.0093)
+        self.assertTrue(math.isnan(df['dividren'].values.tolist()[1]))
+
     def test_structureOfPersonIsCorrect(self):
         df = GetFundamentalTables.x.get('person')
         self.assertEqual(list(df),
@@ -99,6 +118,11 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 5 * [float])
         self.assertEqual(df.shape, (9, 5))
 
+    def test_certainPersonValuesAreCorrect(self):
+        df = GetFundamentalTables.x.get('person')
+        self.assertEqual(df['personal'].values.tolist()[0], 39596)
+        self.assertTrue(math.isnan(df['personal'].values.tolist()[1]))
+
     def test_structureOfMarktkIsCorrect(self):
         df = GetFundamentalTables.x.get('marktk')
         self.assertEqual(list(df),
@@ -106,6 +130,11 @@ class GetFundamentalTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], 3 * [float])
         self.assertEqual(df.shape, (9, 3))
+
+    def test_certainMarktkValuesAreCorrect(self):
+        df = GetFundamentalTables.x.get('marktk')
+        self.assertAlmostEqual(df['zahl_aktien'].values.tolist()[0], 209.20)
+        self.assertTrue(math.isnan(df['zahl_aktien'].values.tolist()[1]))
 
 
 class GetDividendTables(unittest.TestCase):
@@ -117,7 +146,7 @@ class GetDividendTables(unittest.TestCase):
                 with open('finData/testdata/divid.html') as inf:
                     testdata = inf.read()
                 return bytes(testdata, 'utf-8')
-        cls.x = X(*stockA)
+        cls.x = X(*stock)
         cls.x.getDividendTable()
 
     def test_structureOfDividIsCorrect(self):
@@ -127,24 +156,48 @@ class GetDividendTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], [datetime.date] + 3 * [float])
         self.assertEqual(df.shape, (22, 4))
+
+    def test_certainDividValuesAreCorrect(self):
+        df = GetDividendTables.x.get('divid')
+        self.assertAlmostEqual(df['rendite'].values.tolist()[0], 0.0119)
+        self.assertTrue(math.isnan(df['rendite'].values.tolist()[1]))
+
+
+class GetHistTables(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        class X(finData.scrape.Scraper):
+            def _alphavantage_api(self, query):
+                with open('finData/testdata/hist.json') as inf:
+                    testdata = json.load(inf)
+                return testdata
+        cls.x = X(*stock)
+        cls.x.getHistoricPrices()
+
+    def test_structureOfHistIsCorrect(self):
+        df = GetHistTables.x.get('hist')
+        
+        print(df)
+
 #
 #
 # class Test_getDividendTable(unittest.TestCase):
 #
 #     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stockA)
+#         self.a = finData.scrape.Scraper(*stock)
 #
 #
 # class Test_getHistoricPrices(unittest.TestCase):
 #
 #     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stockA)
+#         self.a = finData.scrape.Scraper(*stock)
 #
 #
 # class Test_get(unittest.TestCase):
 #
 #     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stockA)
+#         self.a = finData.scrape.Scraper(*stock)
 
 
 if __name__ == '__main__':
