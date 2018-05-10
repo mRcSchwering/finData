@@ -95,8 +95,8 @@ class Scraper(object):
             'symbol': self.avan_ticker,
             'outputsize': 'full'
         }
-        res = self._alphavantage_api(query)
-        self.hist_table = self._convert_alphavantage(res)
+        self.hist_table = self._alphavantage_api(query)
+        #self.hist_table = self._convert_alphavantage(res)
         self.existingTables.append('hist')
 
     def _getKennza(self, key='kennza'):
@@ -210,19 +210,15 @@ class Scraper(object):
             ['volume', '6. volume'], ['divid_amt', '7. dividend amount'],
             ['split_coef', '8. split coefficient']
         ]
-        tab = self.hist_table
-        tmp = {'datum': [d for d in tab['rownames']]}
-        print(tmp['datum'])
-        for i in range(len(tab['colnames'])):
-            r = tab['colnames'][i].lower()
-            k = [c[0] for c in colMap if c[1] == r][0]
-            print(k)
-            print(len(tab['data'][i]))
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['datum'] + [c[0] for c in colMap]]
-        # df[[c[0] for c in colMap]].apply(pd.to_numeric)
-        return df
+        df = pd.DataFrame \
+            .from_dict(self.hist_table['Time Series (Daily)'], orient='index', dtype=float)
+        new_columns = df.columns.values
+        for i in range(len(df.columns)):
+            col = df.columns[i]
+            new_columns[i] = [c[0] for c in colMap if c[1] == col.lower()][0]
+        df.columns = new_columns
+        df.index = pd.to_datetime(df.index)
+        return df.sort_index()
 
     def get(self, key):
         """Use this method to access the tables"""
@@ -386,23 +382,6 @@ class Scraper(object):
         if 'Error Message' in contentKeys:
             raise ValueError(content['Error Message'])
         return content
-
-    def _convert_alphavantage(self, data,
-                              dateFmt='%Y-%m-%d'):
-        """alphavantage REST to dict conversion"""
-        content = data['Time Series (Daily)']
-        dates = sorted(list(content.keys()))
-        try:
-            dt.datetime.strptime(dates[0], dateFmt)
-        except ValueError:
-            raise ValueError('Unexpected date structure')
-        rownames = [dt.datetime.strptime(d, dateFmt).date() for d in dates]
-        colnames = sorted(list(content[dates[0]].keys()))
-        rows = []
-        for date in dates:
-            row = content[date]
-            rows.append([float(row[i]) for i in colnames])
-        return {'rownames': rownames, 'colnames': colnames, 'data': rows}
 
 
 #

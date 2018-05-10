@@ -177,8 +177,16 @@ class GetHistTables(unittest.TestCase):
 
     def test_structureOfHistIsCorrect(self):
         df = GetHistTables.x.get('hist')
-        
-        print(df)
+        row = df.iloc[[0]].values.tolist()[0]
+        self.assertEqual([type(d) for d in row], 8 * [float])
+        self.assertNotIsInstance(datetime.datetime, type(df.index.values[0]))
+        self.assertTrue(df.index.values[0] < df.index.values[1])
+
+    def test_certainHistValuesAreCorrect(self):
+        df = GetHistTables.x.get('hist')
+        self.assertAlmostEqual(df['close'].values.tolist()[0], 18.5875)
+
+# TODO start enddatum implementieren -> gucken was api supportet
 
 #
 #
