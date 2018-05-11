@@ -1,16 +1,10 @@
-# TODO: erst scrape so weit erweitern, dass länglich daten. am besten pandas
-# TODO: Daten scrapen und als testdaten abspeichern: script bei data/testdata/ speichern
-
-# TODO: create_database.py erweitern, dass testdaten gelesen und in testDB geschrieben werden
-# TODO: multiple insert (https://stackoverflow.com/questions/8134602/psycopg2-insert-multiple-rows-with-one-query)
-
-
 # This Python file uses the following encoding: utf-8
 import finData.scrape as fDs
 import json
 import os.path
+import time
 
-
+# some stocks for testdata
 DAX = [
     {
         'name': 'Adidas',
@@ -76,10 +70,11 @@ DAX = [
         'avan_ticker': 'DB1.DE'
     }
 ]
-DAX = DAX[:3]
 
+# scrape boerse and request hist prices
 data = {}
 for i in range(len(DAX)):
+    print(DAX[i]['avan_ticker'])
     aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
                         DAX[i]['isin'], DAX[i]['currency'],
                         DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
@@ -96,11 +91,36 @@ for i in range(len(DAX)):
         "divid": aktie.get('divid'),
         "hist": aktie.get('hist')
     }
+data.keys()
+
+i = 4
+DAX[i]['avan_ticker']
+aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
+                    DAX[i]['isin'], DAX[i]['currency'],
+                    DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
+aktie.getDividendTable()
+aktie.getFundamentalTables()
+aktie.getHistoricPrices(onlyLast100=True)
+data[aktie.avan_ticker] = {
+    "guv": aktie.get('guv'),
+    "bilanz": aktie.get('bilanz'),
+    "kennza": aktie.get('kennza'),
+    "rentab": aktie.get('rentab'),
+    "person": aktie.get('person'),
+    "marktk": aktie.get('marktk'),
+    "divid": aktie.get('divid'),
+    "hist": aktie.get('hist')
+}
+
+aktie.fund_url
+aktie.fund_tables['guv']
+
+
+
 
 
 basepath = "data/testdata"
 ticker = 'ADS.DE' + '.json'
-
 
 
 

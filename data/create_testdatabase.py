@@ -16,6 +16,7 @@ def create(db_name, schema_name, user, host, port, password):
     print("Creating schema...")
     conn = connector(dbname=db_name, user=user, host=host, port=port, password=password)
     schema(schema_name=schema_name, conn=conn)
+    
 
 
 def drop(db_name, schema_name, user, host, port, password):

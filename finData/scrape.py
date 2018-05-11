@@ -18,10 +18,75 @@ class Scraper(object):
     fund_route = 'fundamental-analyse'
     divid_route = 'dividenden'
     alphavantage_api = 'https://www.alphavantage.co/query'
-    currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR',
-                  'CNY', 'JPY', 'KRW', 'RUB']
-    tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person',
-              'marktk', 'divid', 'hist']
+    currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR', 'CNY', 'JPY', 'KRW', 'RUB']
+    tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
+
+    # column types as they will be in DB schema (rest is numeric)
+    date_columns = ['datum']
+
+    # column id conversion to name as in DB schema for each table
+    guv_id2name = [
+        {'id': 'Umsatz', 'name': 'umsatz'},
+        {'id': 'Bruttoergebnis', 'name': 'bruttoergeb'},
+        {'id': 'Operatives Ergebnis (EBIT)', 'name': 'EBIT'},
+        {'id': 'Ergebnis vor Steuer (EBT)', 'name': 'EBT'},
+        {'id': 'Jahresüberschuss', 'name': 'jahresueber'},
+        {'id': 'Dividendenausschüttung', 'name': 'dividendena'}
+    ]
+    bilanz_id2name = [
+        {'id': 'Umlaufvermögen', 'name': 'umlaufvermo'},
+        {'id': 'Anlagevermögen', 'name': 'anlagevermo'},
+        {'id': 'Summe Aktiva', 'name': 'sum_aktiva'},
+        {'id': 'Kurzfristige Verbindlichkeiten', 'name': 'kurzfr_verb'},
+        {'id': 'Langfristige Verbindlichkeiten', 'name': 'langfr_verb'},
+        {'id': 'Gesamtverbindlichkeiten', 'name': 'gesamt_verb'},
+        {'id': 'Eigenkapital', 'name': 'eigenkapita'},
+        {'id': 'Summe Passiva', 'name': 'sum_passiva'},
+        {'id': 'Eigenkapitalquote', 'name': 'eigen_quote'},
+        {'id': 'Fremdkapitalquote', 'name': 'fremd_quote'}
+    ]
+    rentab_id2name = [
+        {'id': 'Umsatzrendite', 'name': 'umsatzren'},
+        {'id': 'Eigenkapitalrendite', 'name': 'eigenkapren'},
+        {'id': 'Gesamtkapitalrendite', 'name': 'geskapren'},
+        {'id': 'Dividendenrendite', 'name': 'dividren'}
+    ]
+    person_id2name = [
+        {'id': 'Personal am Jahresende', 'name': 'personal'},
+        {'id': 'Personalaufwand in Mio.', 'name': 'aufwand'},
+        {'id': 'Umsatz je Mitarbeiter', 'name': 'umsatz'},
+        {'id': 'Gewinn je Mitarbeiter', 'name': 'gewinn'}
+    ]
+    marktk_id2name = [
+        {'id': 'Anzahl der Aktien', 'name': 'zahl_aktien'},
+        {'id': 'Marktkapitalisierung', 'name': 'marktkapita'}
+    ]
+    kennza_id2name = [
+        {'id': 'Gewinn je Aktie (verwässert)', 'name': 'gewinn_verw'},
+        {'id': 'Gewinn je Aktie (unverwässert)', 'name': 'gewinn_unvw'},
+        {'id': 'Umsatz je Aktie', 'name': 'umsatz'},
+        {'id': 'Buchwert je Aktie', 'name': 'buchwert'},
+        {'id': 'Dividende je Aktie', 'name': 'dividende'},
+        {'id': 'KGV (Kurs-Gewinn-Verhältnis)', 'name': 'KGV'},
+        {'id': 'KBV (Kurs-Buchwert-Verhältnis)', 'name': 'KBV'},
+        {'id': 'KUV (Kurs-Umsatz-Verhältnis)', 'name': 'KUV'}
+    ]
+    divid_id2name = [
+        {'id': 'Datum', 'name': 'datum'},
+        {'id': 'Dividende', 'name': 'dividende'},
+        {'id': 'Veränderung', 'name': 'veraenderu'},
+        {'id': 'Rendite', 'name': 'rendite'}
+    ]
+    hist_id2name = [
+        {'id': '1. open', 'name': 'open'},
+        {'id': '2. high', 'name': 'high'},
+        {'id': '3. low', 'name': 'low'},
+        {'id': '4. close', 'name': 'close'},
+        {'id': '5. adjusted close', 'name': 'adj_close'},
+        {'id': '6. volume', 'name': 'volume'},
+        {'id': '7. dividend amount', 'name': 'divid_amt'},
+        {'id': '8. split coefficient', 'name': 'split_coef'}
+    ]
 
     def __init__(self, name, typ, wkn, isin, currency,
                  boerse_name, avan_ticker, isTest=False):
@@ -37,17 +102,13 @@ class Scraper(object):
         self.avan_ticker = str(avan_ticker)
         self.existingTables = []
         self._resolve_boerse_urls()
-        self.alphavantage_api_key = self._configure_api()
+        self.alphavantage_api_key = Scraper._configure_api()
         self.isTest = isTest
-
-    def _getTables(self, url):
-        return requests.get(url).content
 
     def getFundamentalTables(self,
                              ids=['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
                              texts=['Marktkapitalisierung']):
-        """Scrape fundamental data tables from boerse.de
-        given h3 Ids or h3 text search strings"""
+        """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
         tabDict = {}
         req = self._getTables(self.fund_url)
         soup = BeautifulSoup(req, 'lxml')
@@ -68,15 +129,13 @@ class Scraper(object):
                 print('Table %s was not found' % text)
         out = {}
         for key, tab in tabDict.items():
-            out[key] = self._htmlTab2dict(tab, hasRownames=True,
-                                          hasColnames=True, removeEmpty=True)
-        utab = self._decode(out)
-        self.fund_tables = self._guessTypes(utab)
+            out[key] = Scraper._htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
+        utab = Scraper._decode(out)
+        self.fund_tables = Scraper._guessTypes(utab)
         self.existingTables.extend(self.fund_tables.keys())
 
     def getDividendTable(self, text='Dividenden'):
-        """Scrape dividend table from boerse.de
-        given a h3 text search string"""
+        """Scrape dividend table from boerse.de given a h3 text search string"""
         req = self._getTables(self.divid_url)
         soup = BeautifulSoup(req, 'lxml')
         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
@@ -84,158 +143,37 @@ class Scraper(object):
             tab = h3.findNext('table')
         except AttributeError:
             print('Table %s not found' % text)
-        btab = self._htmlTab2dict(tab, hasRownames=False)
-        utab = self._decode(btab)
-        self.divid_table = self._guessTypes(utab)
+        btab = Scraper._htmlTab2dict(tab, hasRownames=False)
+        utab = Scraper._decode(btab)
+        self.divid_table = Scraper._guessTypes(utab)
         self.existingTables.append('divid')
 
-    def getHistoricPrices(self):
+    def getHistoricPrices(self, onlyLast100=False):
+        """Use alphavantage API to request historic prices"""
         query = {
             'function': 'TIME_SERIES_DAILY_ADJUSTED',
             'symbol': self.avan_ticker,
-            'outputsize': 'full'
+            'outputsize': 'compact' if onlyLast100 else 'full'
         }
         self.hist_table = self._alphavantage_api(query)
-        #self.hist_table = self._convert_alphavantage(res)
         self.existingTables.append('hist')
 
-    def _getKennza(self, key='kennza'):
-        colMap = [
-            ['gewinn_verw', 'verwaessert'], ['gewinn_unvw', 'unverwaessert'],
-            ['umsatz', 'umsatz'], ['buchwert', 'buchwert'], ['dividende', 'dividende'],
-            ['KGV', 'kgv'], ['KBV', 'kbvbuchwert'], ['KUV', 'kuvumsatz']
-        ]
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().replace('ä', 'ae').replace(' ', '')
-            r = r.replace('jeaktie', '').replace('gewinn', '').replace('(', '').replace(')', '')
-            r = r.replace('kurs-', '').replace('-verhaeltnis', '')
-            k = [c[0] for c in colMap if c[1] == r][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + [c[0] for c in colMap]]
-        return df.apply(pd.to_numeric)
-
-    def _getGUV(self, key='guv'):
-        cols = ['umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena']
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().replace('ü', 'ue')
-            k = [c for c in cols if re.search(c.lower(), r)][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + cols]
-        return df.apply(pd.to_numeric)
-
-    def _getBilanz(self, key='bilanz'):
-        colMap = [
-            ['umlaufvermo', 'umlaufvermoegen'], ['anlagevermo', 'anlagevermoegen'],
-            ['sum_aktiva', 'aktiva'], ['kurzfr_verb', 'kurzfristige'], ['langfr_verb', 'langfristige'],
-            ['gesamt_verb', 'gesamt'], ['eigenkapita', 'eigenkapital'], ['sum_passiva', 'passiva'],
-            ['eigen_quote', 'eigenkapitalquote'], ['fremd_quote', 'fremdkapitalquote']
-        ]
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().replace('ö', 'oe').replace(' ', '')
-            r = r.replace('verbindlichkeiten', '').replace('summe', '')
-            k = [c[0] for c in colMap if c[1] == r][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + [c[0] for c in colMap]]
-        return df.apply(pd.to_numeric)
-
-    def _getRentab(self, key='rentab'):
-        colMap = [
-            ['umsatzren', 'umsatz'], ['eigenkapren', 'eigenkapital'],
-            ['geskapren', 'gesamtkapital'], ['dividren', 'dividenden']
-        ]
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().replace('rendite', '')
-            k = [c[0] for c in colMap if c[1] == r][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + [c[0] for c in colMap]]
-        return df.apply(pd.to_numeric)
-
-    def _getPerson(self, key='person'):
-        colMap = [
-            ['personal', 'personal'], ['aufwand', 'personalaufwand'],
-            ['umsatz', 'umsatz'], ['gewinn', 'gewinn']
-        ]
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().split(' ')[0]
-            k = [c[0] for c in colMap if c[1] == r][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + [c[0] for c in colMap]]
-        return df.apply(pd.to_numeric)
-
-    def _getMarktk(self, key='marktk'):
-        colMap = [
-            ['zahl_aktien', 'anzahl'], ['marktkapita', 'marktkapitalisierung']
-        ]
-        tab = self.fund_tables[key]
-        tmp = {'year': [d for d in tab['colnames']]}
-        for i in range(len(tab['rownames'])):
-            r = tab['rownames'][i].lower().split(' ')[0]
-            k = [c[0] for c in colMap if c[1] == r][0]
-            tmp[k] = tab['data'][i]
-        df = pd.DataFrame(tmp)
-        df = df[['year'] + [c[0] for c in colMap]]
-        return df.apply(pd.to_numeric)
-
-    def _getDivid(self, key='divid'):
-        cols = ['datum', 'dividende', 'veraenderu', 'rendite']
-        tab = self.divid_table
-        tmp = {}
-        for i in range(len(tab['colnames'])):
-            r = tab['colnames'][i].lower().replace('ä', 'ae')
-            k = [c for c in cols if re.search(c, r)][0]
-            tmp[k] = [d[i] for d in tab['data']]
-        df = pd.DataFrame(tmp)
-        df[cols[1:]] = df[cols[1:]].apply(pd.to_numeric)
-        return df[cols]
-
-    def _getHist(self, key='hist'):
-        colMap = [
-            ['open', '1. open'], ['high', '2. high'], ['low', '3. low'],
-            ['close', '4. close'], ['adj_close', '5. adjusted close'],
-            ['volume', '6. volume'], ['divid_amt', '7. dividend amount'],
-            ['split_coef', '8. split coefficient']
-        ]
-        df = pd.DataFrame \
-            .from_dict(self.hist_table['Time Series (Daily)'], orient='index', dtype=float)
-        new_columns = df.columns.values
-        for i in range(len(df.columns)):
-            col = df.columns[i]
-            new_columns[i] = [c[0] for c in colMap if c[1] == col.lower()][0]
-        df.columns = new_columns
-        df.index = pd.to_datetime(df.index)
-        return df.sort_index()
-
     def get(self, key):
-        """Use this method to access the tables"""
+        """Return table as pd.DataFrame"""
         if key not in Scraper.tables:
             raise ValueError('Invalid key, expect one of: %s' % Scraper.tables)
         if key not in self.existingTables:
             raise ValueError('No data exists for this key' +
                              ' existing data: %s' % self.existingTables)
         options = {
-            'guv': self._getGUV,
-            'bilanz': self._getBilanz,
-            'kennza': self._getKennza,
-            'rentab': self._getRentab,
-            'person': self._getPerson,
-            'marktk': self._getMarktk,
-            'divid': self._getDivid,
-            'hist': self._getHist
+            'guv': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.guv_id2name),
+            'bilanz': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.bilanz_id2name),
+            'rentab': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.rentab_id2name),
+            'person': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.person_id2name),
+            'marktk': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.marktk_id2name),
+            'kennza': lambda: Scraper._toDataFrame(self.fund_tables[key], Scraper.kennza_id2name),
+            'divid': lambda: Scraper._toDataFrame(self.divid_table, Scraper.divid_id2name, typ='divid'),
+            'hist': lambda: Scraper._toDataFrame(self.hist_table, Scraper.hist_id2name, typ='hist')
         }
         return options[key]()
 
@@ -246,7 +184,95 @@ class Scraper(object):
         self.fund_url = '/'.join([pre, Scraper.fund_route, post])
         self.divid_url = '/'.join([pre, Scraper.divid_route, post])
 
-    def _configure_api(self):
+    def _alphavantage_api(self, query):
+        """mere request; reference: www.alphavantage.co/documentation"""
+        if self.alphavantage_api_key == '':
+            raise KeyError('Alpha Vantage API Key not defined')
+        if not isinstance(query, dict):
+            raise TypeError('Provide query as dictionary of key: value')
+        paramsReq = ['function', 'symbol']
+        paramsOpt = ['outputsize', 'datatype', 'interval']
+        for param in paramsReq:
+            if param not in query.keys():
+                raise KeyError('Parameter required: %s' % param)
+        querystrings = ['apikey=%s' % self.alphavantage_api_key]
+        for key in query:
+            if key not in paramsOpt + paramsReq:
+                raise KeyError('Unused parameter: %s' % key)
+            querystrings.append('%s=%s' % (key, query[key]))
+        res = requests.get(Scraper.alphavantage_api + '?' +
+                           '&'.join(querystrings))
+
+        if res.status_code != 200:
+            raise ValueError('Alpha Vantage returned: %s' % res.status_code)
+        content = json.loads(res.content.decode())
+        try:
+            contentKeys = content.keys()
+        except AttributeError:
+            raise AttributeError('Alpha Vantage returned empty content')
+        if 'Error Message' in contentKeys:
+            raise ValueError(content['Error Message'])
+        return content
+
+    def _getTables(cls, url):
+        """Request url for html"""
+        return requests.get(url).content
+
+    @classmethod
+    def _guessTypes(cls, obj, defStr=['colnames', 'rownames'],
+                    defNaN=['n.v.', '', '%', '-', '-%'], rePerc='(^.*)%$',
+                    reNum='^-?[0-9.]*,[0-9][0-9]*$',
+                    reDate=[{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$',
+                             'fmt': '%d.%m.%y'}]):
+        """Guess and convert types for fundamental tables and dividend table"""
+        identified = True
+        if isinstance(obj, dict):
+            for key in obj:
+                if key in defStr:
+                    obj[key] = [str(d) for d in obj[key]]
+                else:
+                    obj[key] = cls._guessTypes(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = cls._guessTypes(obj[i])
+        else:
+            if obj in defNaN:
+                obj = float('NaN')
+            elif re.search(rePerc, obj):
+                x = re.search(rePerc, obj).group(1).replace(',', '.')
+                x = x.replace(".", "", x.count(".") - 1)
+                obj = float('NaN') if x in defNaN else float(x) / 100
+            elif re.search(reNum, obj):
+                x = obj.replace(',', '.')
+                x = x.replace(".", "", x.count(".") - 1)
+                obj = float('NaN') if x in defNaN else float(x)
+            else:
+                pass
+                identified = False
+                for d in reDate:
+                    if re.search(d['re'], obj):
+                        obj = dt.datetime.strptime(obj, d['fmt']).date()
+                        identified = True
+                        break
+            if not identified:
+                raise ValueError('Value not identified: ' + obj)
+        return obj
+
+    @classmethod
+    def _decode(cls, obj):
+        """Recursive decoding of objects"""
+        if isinstance(obj, dict):
+            for key in obj:
+                obj[key] = cls._decode(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = cls._decode(obj[i])
+        elif isinstance(obj, bytes):
+            obj = obj.decode()
+        return obj
+
+    @classmethod
+    def _configure_api(cls):
         """API key for alpha vantag REST API"""
         key = ''
         try:
@@ -260,7 +286,8 @@ class Scraper(object):
                 pass
         return key
 
-    def _htmlTab2dict(self, tab, hasRownames=True, hasColnames=True,
+    @classmethod
+    def _htmlTab2dict(cls, tab, hasRownames=True, hasColnames=True,
                       removeEmpty=True, checkTable=True):
         """Return dict of lists from html table string"""
         rows = tab.findAll('tr')
@@ -303,96 +330,44 @@ class Scraper(object):
                 raise UserWarning('Data rows do not all have the same lengths')
         return out
 
-    def _decode(self, obj):
-        if isinstance(obj, dict):
-            for key in obj:
-                obj[key] = self._decode(obj[key])
-        elif isinstance(obj, list):
-            for i in range(len(obj)):
-                obj[i] = self._decode(obj[i])
-        elif isinstance(obj, bytes):
-            obj = obj.decode()
-        return obj
-
-    def _guessTypes(self, obj, defStr=['colnames', 'rownames'],
-                    defNaN=['n.v.', '', '%', '-', '-%'], rePerc='(^.*)%$',
-                    reNum='^-?[0-9.]*,[0-9][0-9]*$',
-                    reDate=[{'re': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$',
-                             'fmt': '%d.%m.%y'}]):
-        """Guess and convert types for fundamental tables and dividend table"""
-        identified = True
-        if isinstance(obj, dict):
-            for key in obj:
-                if key in defStr:
-                    obj[key] = [str(d) for d in obj[key]]
+    @classmethod
+    def _toDataFrame(cls, data, mapping, typ='fund'):
+        """Convert tables as from _htmlTab2dict into pd.DataFrames as in DB schema"""
+        if typ == 'fund':
+            tmp = {'year': [d for d in data['colnames']]}
+            for col in mapping:
+                if col['id'] in data['rownames']:
+                    idx = data['rownames'].index(col['id'])
+                    tmp[col['name']] = data['data'][idx]
                 else:
-                    obj[key] = self._guessTypes(obj[key])
-        elif isinstance(obj, list):
-            for i in range(len(obj)):
-                obj[i] = self._guessTypes(obj[i])
-        else:
-            if obj in defNaN:
-                obj = float('NaN')
-            elif re.search(rePerc, obj):
-                x = re.search(rePerc, obj).group(1).replace(',', '.')
-                x = x.replace(".", "", x.count(".") - 1)
-                obj = float('NaN') if x in defNaN else float(x) / 100
-            elif re.search(reNum, obj):
-                x = obj.replace(',', '.')
-                x = x.replace(".", "", x.count(".") - 1)
-                obj = float('NaN') if x in defNaN else float(x)
-            else:
-                pass
-                identified = False
-                for d in reDate:
-                    if re.search(d['re'], obj):
-                        obj = dt.datetime.strptime(obj, d['fmt']).date()
-                        identified = True
-                        break
-            if not identified:
-                raise ValueError('Value not identified: ' + obj)
-        return obj
+                    tmp[col['name']] = len(data['colnames']) * [float('NaN')]
+            df = pd.DataFrame.from_dict(tmp)
+            df = df[['year'] + [c['name'] for c in mapping]]
 
-    def _alphavantage_api(self, query):
-        """mere request; reference: www.alphavantage.co/documentation"""
-        if self.alphavantage_api_key == '':
-            raise KeyError('Alpha Vantage API Key not defined')
-        if not isinstance(query, dict):
-            raise TypeError('Provide query as dictionary of key: value')
-        paramsReq = ['function', 'symbol']
-        paramsOpt = ['outputsize', 'datatype', 'interval']
-        for param in paramsReq:
-            if param not in query.keys():
-                raise KeyError('Parameter required: %s' % param)
-        querystrings = ['apikey=%s' % self.alphavantage_api_key]
-        for key in query:
-            if key not in paramsOpt + paramsReq:
-                raise KeyError('Unused parameter: %s' % key)
-            querystrings.append('%s=%s' % (key, query[key]))
-        res = requests.get(Scraper.alphavantage_api + '?' +
-                           '&'.join(querystrings))
+        if typ == 'divid':
+            tmp = {}
+            for col in mapping:
+                if col['id'] in data['colnames']:
+                    idx = data['colnames'].index(col['id'])
+                    tmp[col['name']] = [d[idx] for d in data['data']]
+                else:
+                    tmp[col['name']] = len(data['data']) * [float('NaN')]
+            df = pd.DataFrame.from_dict(tmp)
+            df = df[[c['name'] for c in mapping]]
 
-        if res.status_code != 200:
-            raise ValueError('Alpha Vantage returned: %s' % res.status_code)
-        content = json.loads(res.content.decode())
-        try:
-            contentKeys = content.keys()
-        except AttributeError:
-            raise AttributeError('Alpha Vantage returned empty content')
-        if 'Error Message' in contentKeys:
-            raise ValueError(content['Error Message'])
-        return content
+        if typ == 'hist':
+            df = pd.DataFrame \
+                .from_dict(data['Time Series (Daily)'], orient='index', dtype=float)
+            newCols = []
+            for idx in range(len(df.columns)):
+                newCols.append([c['name'] for c in mapping if c['id'] == df.columns[idx]][0])
+            df.columns = newCols
+            df = df[[c['name'] for c in mapping]]
+            df.index = pd.to_datetime(df.index)
+            df.sort_index(inplace=True)
 
-
-#
-# ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR',
-#        'Adidas-Aktie', 'ADS.DE']
-#
-# a = Scraper(*ads)
-# a.getDividendTable()
-# tab = a.get('divid')
-# tab['colnames']
-#
-#
-# df.dtypes
-# [type(d) for d in df.iloc[[0]].values.tolist()[0]]
+        dateCols = [c for c in df.columns if c in cls.date_columns]
+        numCols = [c for c in df.columns if c not in dateCols]
+        df[dateCols] = df[dateCols].astype(dt.date)
+        df[numCols] = df[numCols].apply(pd.to_numeric)
+        return df

@@ -25,12 +25,12 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s finData -v -p "*test_scrape*"
 
-  smoke-loader:
+  smoke-connector:
     docker:
       - image: mrcschwering/cci-findata_build:latest
     working_directory: /app
     steps:
-      - run: python3 -m unittest discover -s finData -v -p "*test_load*"
+      - run: python3 -m unittest discover -s finData -v -p "*test_connect*"
 
   integration-tests:
     docker:

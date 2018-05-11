@@ -97,6 +97,10 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertAlmostEqual(df['KGV'].values.tolist()[0], 30.20)
         self.assertTrue(math.isnan(df['KGV'].values.tolist()[1]))
 
+    def test_umsatzInKennzaIsNaN(self):
+        df = GetFundamentalTables.x.get('kennza')
+        self.assertTrue(math.isnan(df['umsatz'].values.tolist()[0]))
+
     def test_structureOfRentabIsCorrect(self):
         df = GetFundamentalTables.x.get('rentab')
         self.assertEqual(list(df),
@@ -185,27 +189,6 @@ class GetHistTables(unittest.TestCase):
     def test_certainHistValuesAreCorrect(self):
         df = GetHistTables.x.get('hist')
         self.assertAlmostEqual(df['close'].values.tolist()[0], 18.5875)
-
-# TODO start enddatum implementieren -> gucken was api supportet
-
-#
-#
-# class Test_getDividendTable(unittest.TestCase):
-#
-#     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stock)
-#
-#
-# class Test_getHistoricPrices(unittest.TestCase):
-#
-#     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stock)
-#
-#
-# class Test_get(unittest.TestCase):
-#
-#     def setUp(self):
-#         self.a = finData.scrape.Scraper(*stock)
 
 
 if __name__ == '__main__':
