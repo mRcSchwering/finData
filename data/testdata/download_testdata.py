@@ -2,7 +2,7 @@
 import finData.scrape as fDs
 import json
 import os.path
-import time
+import pickle
 
 # some stocks for testdata
 DAX = [
@@ -74,7 +74,6 @@ DAX = [
 # scrape boerse and request hist prices
 data = {}
 for i in range(len(DAX)):
-    print(DAX[i]['avan_ticker'])
     aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
                         DAX[i]['isin'], DAX[i]['currency'],
                         DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
@@ -91,38 +90,13 @@ for i in range(len(DAX)):
         "divid": aktie.get('divid'),
         "hist": aktie.get('hist')
     }
-data.keys()
 
-i = 4
-DAX[i]['avan_ticker']
-aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
-                    DAX[i]['isin'], DAX[i]['currency'],
-                    DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
-aktie.getDividendTable()
-aktie.getFundamentalTables()
-aktie.getHistoricPrices(onlyLast100=True)
-data[aktie.avan_ticker] = {
-    "guv": aktie.get('guv'),
-    "bilanz": aktie.get('bilanz'),
-    "kennza": aktie.get('kennza'),
-    "rentab": aktie.get('rentab'),
-    "person": aktie.get('person'),
-    "marktk": aktie.get('marktk'),
-    "divid": aktie.get('divid'),
-    "hist": aktie.get('hist')
-}
+# save data as json
+basepath = 'data/testdata'
+filename = 'testdata.pkl'
+with open(os.path.join(basepath, filename), 'wb') as ouf:
+    pickle.dump(data, ouf)
 
-aktie.fund_url
-aktie.fund_tables['guv']
-
-
-
-
-
-basepath = "data/testdata"
-ticker = 'ADS.DE' + '.json'
-
-
-
-with open(os.path.join(basepath, ticker), 'w') as ouf:
-    json.dump(d, ouf, indent=4, sort_keys=True, default=str)
+# load
+# with open(os.path.join(basepath, filename), 'rb') as inf:
+#     data2 = pickle.load(inf)

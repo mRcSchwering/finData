@@ -23,6 +23,7 @@ class Scraper(object):
 
     # column types as they will be in DB schema (rest is numeric)
     date_columns = ['datum']
+    int_columns = ['year']
 
     # column id conversion to name as in DB schema for each table
     guv_id2name = [
@@ -367,7 +368,9 @@ class Scraper(object):
             df.sort_index(inplace=True)
 
         dateCols = [c for c in df.columns if c in cls.date_columns]
-        numCols = [c for c in df.columns if c not in dateCols]
+        intCols = [c for c in df.columns if c in cls.int_columns]
+        numCols = [c for c in df.columns if c not in dateCols + intCols]
         df[dateCols] = df[dateCols].astype(dt.date)
+        df[intCols] = df[intCols].astype(int)
         df[numCols] = df[numCols].apply(pd.to_numeric)
         return df
