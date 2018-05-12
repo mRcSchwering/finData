@@ -81,6 +81,7 @@ for i in range(len(DAX)):
     aktie.getFundamentalTables()
     aktie.getHistoricPrices(onlyLast100=True)
     data[aktie.avan_ticker] = {
+        "stock": DAX[i],
         "guv": aktie.get('guv'),
         "bilanz": aktie.get('bilanz'),
         "kennza": aktie.get('kennza'),
