@@ -3,6 +3,9 @@ from data.schemata.schema_init import schema_init as schema  # the current schem
 from psycopg2.extensions import AsIs
 import psycopg2
 import argparse
+#TODO Zeilen einfügen für testdaten
+# args_str = ','.join(cur.mogrify("(%s,%s,%s,%s,%s,%s,%s,%s,%s)", x) for x in tup)
+# cur.execute("INSERT INTO table VALUES " + args_str)
 
 
 def connector(dbname, user, host, port, password=""):
@@ -16,7 +19,7 @@ def create(db_name, schema_name, user, host, port, password):
     print("Creating schema...")
     conn = connector(dbname=db_name, user=user, host=host, port=port, password=password)
     schema(schema_name=schema_name, conn=conn)
-    
+    print("Populating with some data...")
 
 
 def drop(db_name, schema_name, user, host, port, password):

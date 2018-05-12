@@ -82,7 +82,7 @@ workflows:
       - smoke-scraper:
           requires:
             - build
-      - smoke-loader:
+      - smoke-connector:
           requires:
             - build
       - integration-tests:
