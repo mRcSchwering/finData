@@ -50,6 +50,15 @@ jobs:
             docker-compose run client "CREATE DATABASE findata;"
             docker-compose run client "\l"
       - run:
+          name: Create test schema and fill with data
+          command: |
+            docker-compose run app data.create_testdatabase \
+              --db findata \
+              --schema testdb \
+              --host server \
+              --port 5432 \
+              --user postgres
+      - run:
           name: Run Integration Tests
           command: |
             docker-compose run app test.integration_test
