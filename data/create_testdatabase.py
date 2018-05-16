@@ -9,9 +9,17 @@ stock_cols = ("'{name}','{isin}','{wkn}','{typ}','{currency}',"
               "'{boerse_name}','{avan_ticker}'")
 tab_cols = {
     'guv': "{year},{umsatz},{bruttoergeb},{EBIT},{EBT},{jahresueber},{dividendena}",
-    'person': "{year},{personal},{aufwand},{umsatz},{gewinn}"
+    'bilanz': ("{year},{umlaufvermo},{anlagevermo},{sum_aktiva},{kurzfr_verb},"
+               "{langfr_verb},{gesamt_verb},{eigenkapita},{sum_passiva},"
+               "{eigen_quote},{fremd_quote}"),
+    'kennza': ("{year},{gewinn_verw},{gewinn_unvw},{umsatz},{buchwert},"
+               "{dividende},{KGV},{KBV},{KUV}"),
+    'rentab': "{year},{umsatzren},{eigenkapren},{geskapren},{dividren}",
+    'marktk': "{year},{zahl_aktien},{marktkapita}",
+    'divid': "'{datum}',{dividende},{veraenderu},{rendite}",
+    'hist': ("'{datum}',{open},{high},{low},{close},"
+             "{adj_close},{volume},{divid_amt},{split_coef}")
 }
-#TODO verbleibende tabellen definieren
 
 
 def connector(dbname, user, host, port, password=""):

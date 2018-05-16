@@ -182,7 +182,7 @@ class GetHistTables(unittest.TestCase):
     def test_structureOfHistIsCorrect(self):
         df = GetHistTables.x.get('hist')
         row = df.iloc[[0]].values.tolist()[0]
-        self.assertEqual([type(d) for d in row], 8 * [float])
+        self.assertEqual([type(d) for d in row], [datetime.date] + 8 * [float])
         self.assertNotIsInstance(datetime.datetime, type(df.index.values[0]))
         self.assertTrue(df.index.values[0] < df.index.values[1])
 

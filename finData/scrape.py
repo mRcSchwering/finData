@@ -79,6 +79,7 @@ class Scraper(object):
         {'id': 'Rendite', 'name': 'rendite'}
     ]
     hist_id2name = [
+        {'id': 'datum', 'name': 'datum'},
         {'id': '1. open', 'name': 'open'},
         {'id': '2. high', 'name': 'high'},
         {'id': '3. low', 'name': 'low'},
@@ -359,6 +360,7 @@ class Scraper(object):
         if typ == 'hist':
             df = pd.DataFrame \
                 .from_dict(data['Time Series (Daily)'], orient='index', dtype=float)
+            df['datum'] = df.index
             newCols = []
             for idx in range(len(df.columns)):
                 newCols.append([c['name'] for c in mapping if c['id'] == df.columns[idx]][0])
@@ -370,7 +372,9 @@ class Scraper(object):
         dateCols = [c for c in df.columns if c in cls.date_columns]
         intCols = [c for c in df.columns if c in cls.int_columns]
         numCols = [c for c in df.columns if c not in dateCols + intCols]
-        df[dateCols] = df[dateCols].astype(dt.date)
+        df[dateCols] = df[dateCols].astype('datetime64[ns]')
+        for col in dateCols:
+            df[col] = [d.date() for d in df[col]]
         df[intCols] = df[intCols].astype(int)
         df[numCols] = df[numCols].apply(pd.to_numeric)
         return df
