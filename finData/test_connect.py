@@ -1,29 +1,25 @@
 # This Python file uses the following encoding: utf-8
-import unittest
+from psycopg2.extensions import AsIs
+from unittest.mock import patch
 import finData.connect
+import psycopg2 as pg
+import unittest
 
-constring = ['schemanem', 'dbname', 'user', 'host', 1234]
+
+conn_list = ['findata', 'testdb', 'postgres', '127.0.0.1', 5432]
 
 
 class Constructor(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        class X(finData.connect.Connector):
-            def _connect(self):
-                return 'connected'
-        cls.x = X(*constring)
+        with patch('finData.connect.Connector') as mock_class:
+            cls.x = mock_class.return_value
+            cls.x.return_value = 'asdf'
+            #cls.x = finData.connect.Connector(**conn_list)
 
     def test_throwingProperErrorsOnStart(self):
-        with self.assertRaises(TypeError):
-            finData.connect.Connector()
-        self.assertEqual(self.x.conn, 'connected')
-
-    def test_setTableRecognizesWrongTable(self):
-        with self.assertRaises(ValueError):
-            self.x.setTable('asdf')
-        self.x.setTable('hist')
-        self.assertEqual(self.x.table, 'hist')
+        print(Constructor.x())
 
 
 if __name__ == '__main__':
