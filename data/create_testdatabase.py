@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 from data.schemata.schema_init import schema_init as schema  # the current schema
 from psycopg2.extensions import AsIs
-import psycopg2
+import psycopg2 as pg
 import argparse
 import pickle
 
@@ -24,15 +24,15 @@ tab_cols = {
 
 def connector(dbname, user, host, port, password=""):
     if password == "":
-        return psycopg2.connect(dbname=dbname, user=user, host=host, port=port)
+        return pg.connect(dbname=dbname, user=user, host=host, port=port)
     else:
-        return psycopg2.connect(dbname=dbname, user=user, host=host, port=port, password=password)
+        return pg.connect(dbname=dbname, user=user, host=host, port=port, password=password)
 
 
 def insertStatement(schema, table, cols, vals):
-    return "INSERT INTO {schema}.{table} ({cols}) VALUES {vals}" \
-        .format(schema=AsIs(schema), table=AsIs(table),
-                cols=cols, vals='({})'.format('),('.join(vals)))
+    return """INSERT INTO {schema}.{table} ({cols}) VALUES {vals}""" \
+           .format(schema=AsIs(schema), table=AsIs(table),
+                   cols=cols, vals='({})'.format('),('.join(vals)))
 
 
 def inserTestdata(data, conn, schema_name):
@@ -42,7 +42,8 @@ def inserTestdata(data, conn, schema_name):
     vals = [stock_cols.format(**data[t]['stock']) for t in data]
     with conn.cursor() as cur:
         cur.execute(insertStatement(schema_name, 'stock', cols, vals))
-        cur.execute("SELECT id, avan_ticker FROM {schema}.stock".format(schema=schema_name))
+        cur.execute("""SELECT id, avan_ticker FROM {schema}.stock"""
+                    .format(schema=schema_name))
         stock_ids = cur.fetchall()
 
     # for each stock get stock id and insert all tables

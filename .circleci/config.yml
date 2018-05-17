@@ -61,8 +61,12 @@ jobs:
       - run:
           name: Run Integration Tests
           command: |
-            docker-compose run app test.integration_test
-
+            docker-compose run app test.integration_test \
+              --db findata \
+              --schema testdb \
+              --host server \
+              --port 5432 \
+              --user postgres
   deploy:
     environment:
       build: mrcschwering/cci-findata_build:latest

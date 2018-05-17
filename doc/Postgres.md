@@ -47,16 +47,26 @@ psql -h 127.0.0.1 -p 5432 -U postgres
 Create database, then log into it.
 
 ```
-createdb -h 127.0.0.1 -p 5432 findata -U postgres -w postgres
+createdb -h 127.0.0.1 -p 5432 findata -U postgres
 psql -h 127.0.0.1 -p 5432 -U postgres findata
 ```
 
-Then create a schema.
+# Secure Docker Volume
+
+A `docker volume prune`, and all volumes without an attached container are gone.
+So, I create a throw away container that should lock the volume.
 
 ```
-CREATE SCHEMA IF NOT EXISTS findata_init;
-SELECT schema_name FROM information_schema.schemata; # schema listed
+docker run \
+  --name="DO_NOT_DELETE_ME" \
+  -v "$VOL_NAME":/mnt \
+  alpine
 ```
+
+As long as this container exists -- even if it's not running -- the volume
+won't get pruned.
+But I need to be careful with not deleting the container.
+
 
 
 # Psycopg2
