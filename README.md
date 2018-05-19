@@ -1,15 +1,3 @@
-# config.json
-
-Any keys for development.
-The relevant functions should look for the `config.json` first,
-then for environment variables if they didn't find the key.
-
-```
-{
-  "ALPHAVANTAGE_API_KEY": ""
-}
-```
-
 # helper.sh
 
 Helper for developing.
@@ -30,3 +18,15 @@ There are different docker-compose files:
 - `docker-compose.yml` for development, always builds service _app_ new
 - `docker-compose_build.yml` takes _build_-tagged image for _app_
 - `docker-compose_deploy.yml` takes _deploy_-tagged image for _app_, doesn't have _client_, and _server_ has the database volume mounted (TODO...)
+
+# config.json
+
+Any keys for development.
+The relevant functions should look for the `config.json` first,
+then for environment variables if they didn't find the key.
+
+```
+{
+  "ALPHAVANTAGE_API_KEY": ""
+}
+```

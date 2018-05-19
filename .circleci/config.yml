@@ -16,7 +16,7 @@ jobs:
           name: Push finData build
           command: |
             docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
-            docker push "mrcschwering/cci-findata_build:latest"
+            docker push "$build"
 
   smoke-scraper:
     docker:
