@@ -53,13 +53,19 @@ class Connector(object):
             return pg.connect(dbname=self.db_name, user=self.user,
                               host=self.host, port=self.port, password=self.password)
 
+    def select(self):
+        with self.conn.cursor() as cur:
+            cur.execute("""SELECT id FROM testdb.stock""")
+            ids = cur.fetchall()
+        return ids
+
     @classmethod
     def _insertNewStockRow(cls, row, schema, conn):
         """INSERT dict of new stock into stock table, return the assigned id"""
         cols = cls.prim_cols \
             .replace("'", "").replace('"', '') \
             .replace("{", "").replace("}", "")
-        vals = [prim_cols.format(**row)]
+        vals = [cls.prim_cols.format(**row)]
         with conn.cursor() as cur:
             cur.execute(cls._insertStatement(schema, 'stock', cols, vals))
             cur.execute(
@@ -71,13 +77,7 @@ class Connector(object):
 
     @classmethod
     def _insertStatement(cls, schema, table, cols, vals):
-        """Statement string from column list and value rows as list if lists"""
+        """Statement string from column name str and value rows as list of str"""
         return """INSERT INTO {schema}.{table} ({cols}) VALUES {vals}""" \
                .format(schema=AsIs(schema), table=AsIs(table),
                        cols=cols, vals='({})'.format('),('.join(vals)))
-
-    @classmethod
-    def _setTable(cls, table):
-        if table not in Connector.tables:
-            raise ValueError('Invalid table, expect one of: %s' % Connector.tables)
-        return table
