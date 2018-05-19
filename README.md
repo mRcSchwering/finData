@@ -1,3 +1,16 @@
+# Overview
+
+- `_docker` Dockerfiles of some images used
+- `.circleci/config.yml` circleci workflow (build, test, deploy)
+- `data` file for setting up database
+- `doc` some documentation
+- `finData` the actual app
+- `test` integration tests
+- `helper.sh` helpful commands for development
+- `Dockerfile` used to build the app
+- `requirements.txt` used by `Dockerfile`
+- `docker-compose.yml`s for develop, build, deploy
+
 # helper.sh
 
 Helper for developing.
