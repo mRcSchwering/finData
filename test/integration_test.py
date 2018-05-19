@@ -37,6 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--db', dest='db_name', type=str, help='database name in which schema is created', required=True)
     parser.add_argument('--schema', dest='schema_name', type=str, help='name of new schema', required=True)
     parser.add_argument('--user', dest='user', type=str, help='user name', required=True)
+    parser.add_argument('--pass', dest='password', type=str, default="", help='user password if any')
     parser.add_argument('--port', dest='port', type=str, help='set port as str', required=True)
     parser.add_argument('--host', dest='host', type=str, help='set host as str', required=True)
     args = parser.parse_args()
