@@ -1,19 +1,16 @@
 # This Python file uses the following encoding: utf-8
-"""Short Description.
-
-Detailed Description
-"""
-
+from bs4 import BeautifulSoup
+import datetime as dt
+import pandas as pd
 import os
 import re
 import json
 import requests
-import datetime as dt
-from bs4 import BeautifulSoup
-import pandas as pd
 
 
 class Scraper(object):
+    """Data scraping from boerse.de and requesting from alphavantage.co"""
+
     host = 'www.boerse.de'
     fund_route = 'fundamental-analyse'
     divid_route = 'dividenden'

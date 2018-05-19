@@ -6,10 +6,7 @@ import psycopg2 as pg
 
 
 class Connector(object):
-    """DB Connector for SELECTing and INSERTing data
-
-    Detailed Description
-    """
+    """DB Connector for SELECTing and INSERTing data"""
 
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
 
@@ -42,22 +39,14 @@ class Connector(object):
         self.password = str(password)
         self.conn = self._connect()
 
-    def _insertStock():
-        pass
-
     def _connect(self):
+        """Return mere DB connection"""
         if self.password == "":
             return pg.connect(dbname=self.db_name, user=self.user,
                               host=self.host, port=self.port)
         else:
             return pg.connect(dbname=self.db_name, user=self.user,
                               host=self.host, port=self.port, password=self.password)
-
-    def select(self):
-        with self.conn.cursor() as cur:
-            cur.execute("""SELECT id FROM testdb.stock""")
-            ids = cur.fetchall()
-        return ids
 
     @classmethod
     def _insertNewStockRow(cls, row, schema, conn):
