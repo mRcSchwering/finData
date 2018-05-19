@@ -3,6 +3,7 @@ from psycopg2.extensions import AsIs
 import psycopg2 as pg
 import argparse
 
+
 #schema_name = "testdb"
 
 

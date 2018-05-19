@@ -71,6 +71,7 @@ jobs:
               --host server \
               --port 5432 \
               --user postgres
+              
   deploy:
     environment:
       build: mrcschwering/cci-findata_build:latest
