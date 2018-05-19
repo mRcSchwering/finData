@@ -1,12 +1,9 @@
 # This Python file uses the following encoding: utf-8
-"""Integration tests
-
-Detailed Description
-"""
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
+import argparse
 
-schema_name = "testdb"
+#schema_name = "testdb"
 
 
 def _log(msg):
@@ -36,7 +33,7 @@ def main(db_name, schema_name, user, host, port, password):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Create separate schema and fill it with data')
+    parser = argparse.ArgumentParser(description='Run integration tests')
     parser.add_argument('--db', dest='db_name', type=str, help='database name in which schema is created', required=True)
     parser.add_argument('--schema', dest='schema_name', type=str, help='name of new schema', required=True)
     parser.add_argument('--user', dest='user', type=str, help='user name', required=True)
