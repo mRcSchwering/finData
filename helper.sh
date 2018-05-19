@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# use
-# - `helper.sh test [<searchString>]` to run tests [filter for certain tests]
-# - `helper.sh start server` to start postgres server with volume attached
-# - `helper.sh connect` to psql into database
-# - `helper.sh stop server` to stop postgres server
-# - `helper.sh create <testSchemaName>` to create a test schema in database
-# - `helper.sh drop <testSchemaName>` to drop a test schema in database
+# see README.md for use
 
-DB_NAME="findata"
 PG_NAME="postgres_server"
 VOL_NAME="postgres_data"
+DB_NAME="findata"
+SCHEMA_NAME="testdb"
 
 # argument
 if [ $1 ]; then
@@ -64,7 +59,7 @@ if [ $1 ]; then
       if [ $2 ]; then
         printf "Creating $2 in database $DB_NAME\n"
         printf "hopefully you already started the server\n\n"
-        python3 -m data.create_testdatabase \
+        python3 -m test.create_testdatabase \
           --db "$DB_NAME" \
           --schema "$2" \
           --host "127.0.0.1" \
@@ -79,7 +74,7 @@ if [ $1 ]; then
       if [ $2 ]; then
         printf "Dropping $2 in database $DB_NAME\n"
         printf "hopefully you already started the server\n\n"
-        python3 -m data.create_testdatabase \
+        python3 -m test.create_testdatabase \
           --db "$DB_NAME" \
           --schema "$2" \
           --host "127.0.0.1" \
@@ -87,6 +82,32 @@ if [ $1 ]; then
           --user "postgres" \
           --drop
       fi
+      ;;
+
+      # integration
+      integration)
+        printf "Integration testing\n\n"
+        printf "Running docker-compose up (w/ build)...\n\n"
+        printf "need root\n"
+        sudo docker-compose up -d
+        sleep 5
+        printf "\n\nCreating DB $DB_NAME with schema $SCHEMA_NAME...\n\n"
+        sudo docker-compose run client "CREATE DATABASE findata;"
+        sudo docker-compose run app test.create_testdatabase \
+          --db "$DB_NAME" \
+          --schema "$SCHEMA_NAME" \
+          --host server \
+          --port 5432 \
+          --user postgres
+        printf "\n\nRunning integration tests...\n\n"
+        sudo docker-compose run app test.integration_test \
+          --db "$DB_NAME" \
+          --schema "$SCHEMA_NAME" \
+          --host server \
+          --port 5432 \
+          --user postgres
+        printf "\n\nStopping...\n\n"
+        sudo docker-compose down
       ;;
   esac
 

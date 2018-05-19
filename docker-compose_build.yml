@@ -13,6 +13,6 @@ services:
         - server
 
   app:
-    build: .
+    image: mrcschwering/cci-findata_build:latest
     depends_on:
         - server

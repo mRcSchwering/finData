@@ -64,7 +64,7 @@ def create(db_name, schema_name, user, host, port, password):
         print("Creating schema...")
         schema(schema_name=schema_name, conn=conn)
         print("Populating with some data...")
-        with open('data/testdata/testdata.pkl', 'rb') as inf:
+        with open('test/testdata/testdata.pkl', 'rb') as inf:
             data = pickle.load(inf)
         inserTestdata(data, conn, schema_name)
 

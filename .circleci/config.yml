@@ -41,18 +41,21 @@ jobs:
       - run:
           name: Start Containers
           command: |
-            docker-compose up -d
+            docker-compose -f 'docker-compose_build.yml' up -d
             sleep 5
-            docker-compose ps
+            docker-compose -f 'docker-compose_build.yml' ps
       - run:
           name: Create DB using psql client
           command: |
-            docker-compose run client "CREATE DATABASE findata;"
-            docker-compose run client "\l"
+            docker-compose -f 'docker-compose_build.yml' \
+              run client "CREATE DATABASE findata;"
+            docker-compose -f 'docker-compose_build.yml' \
+              run client "\l"
       - run:
           name: Create test schema and fill with data
           command: |
-            docker-compose run app data.create_testdatabase \
+            docker-compose -f 'docker-compose_build.yml' \
+              run app test.create_testdatabase \
               --db findata \
               --schema testdb \
               --host server \
@@ -61,7 +64,8 @@ jobs:
       - run:
           name: Run Integration Tests
           command: |
-            docker-compose run app test.integration_test \
+            docker-compose -f 'docker-compose_build.yml' \
+              run app test.integration_test \
               --db findata \
               --schema testdb \
               --host server \

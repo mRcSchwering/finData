@@ -7,12 +7,7 @@ services:
     expose:
       - '5432'
 
-  client:
-    image: mrcschwering/psql-client:latest
-    depends_on:
-        - server
-
   app:
-    build: .
+    image: mrcschwering/cci-findata_deploy:latest
     depends_on:
         - server

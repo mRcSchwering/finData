@@ -1,7 +1,6 @@
 # This Python file uses the following encoding: utf-8
 import finData.scrape as fDs
 import json
-import os.path
 import pickle
 
 # some stocks for testdata
@@ -93,11 +92,9 @@ for i in range(len(DAX)):
     }
 
 # save data as json
-basepath = 'data/testdata'
-filename = 'testdata.pkl'
-with open(os.path.join(basepath, filename), 'wb') as ouf:
+with open('test/testdata/testdata.pkl', 'wb') as ouf:
     pickle.dump(data, ouf)
 
 # load
-# with open(os.path.join(basepath, filename), 'rb') as inf:
+# with open('test/testdata/testdata.pkl', 'rb') as inf:
 #     data2 = pickle.load(inf)

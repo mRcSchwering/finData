@@ -15,8 +15,18 @@ then for environment variables if they didn't find the key.
 Helper for developing.
 Use:
 - `helper.sh test [<searchString>]` to run tests [filter for certain tests]
-- `helper.sh start server` to start postgres server with volume attached
-- `helper.sh connect` to psql into database
-- `helper.sh stop server` to stop postgres server
-- `helper.sh create <testSchemaName>` to create a test schema in database
-- `helper.sh drop <testSchemaName>` to drop a test schema in database
+- `helper.sh start server` to start postgres server (with volume attached)
+- `helper.sh stop server` to stop postgres server (with volume attached)
+- `helper.sh connect` to psql into database (on host)
+- `helper.sh create <testSchemaName>` to create a test schema in database (on host)
+- `helper.sh drop <testSchemaName>` to drop a test schema in database (on host)
+- `helper.sh integration` docker compose up, run integration tests, docker compose down (DB in memory)
+
+# docker-compose
+
+Service _app_ has the actual `findata` app, _server_ is the postgres server,
+_client_ is a `psql` client.
+There are different docker-compose files:
+- `docker-compose.yml` for development, always builds service _app_ new
+- `docker-compose_build.yml` takes _build_-tagged image for _app_
+- `docker-compose_deploy.yml` takes _deploy_-tagged image for _app_, doesn't have _client_, and _server_ has the database volume mounted (TODO...)
