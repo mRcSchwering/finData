@@ -52,6 +52,12 @@ if [ $1 ]; then
       fi
       ;;
 
+    # connect
+    connect)
+      printf "Connecting to $DB_NAME\n"
+      psql -h 127.0.0.1 -p 5432 -U postgres "$DB_NAME"
+      ;;
+
     # create
     create)
       if [ $2 ]; then

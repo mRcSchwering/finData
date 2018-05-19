@@ -41,7 +41,7 @@ class WithoutConnection(unittest.TestCase):
     def test_properInsertStatements(self):
         colNames = 'col1, col2'
         colVals = ["'x',1", "'y', 2"]
-        exp = "INSERT INTO schem.tab (col1, col2) VALUES ('x',1),('y', 2)"
+        exp = """INSERT INTO schem.tab (col1, col2) VALUES ('x',1),('y', 2)"""
         res = self.x._insertStatement('schem', 'tab', colNames, colVals)
         self.assertEqual(res, exp)
 
@@ -50,7 +50,7 @@ class InsertNewStockRow(unittest.TestCase):
 
     def setUp(self):
         mockDB = MagicMock()
-        mockDB.fetchone.return_value = [1]
+        mockDB.fetchone = MagicMock(return_value=[1])
 
         with patch('finData.connect.Connector._connect') as connect:
             connect.return_value = mockDBconnect(mockDB)
@@ -63,10 +63,10 @@ class InsertNewStockRow(unittest.TestCase):
     def test_exexuteWasProperlyCalled(self):
             res = self.x._insertNewStockRow(newStock, 'testdb', self.x.conn)
             ex = self.x.conn.cursor().__enter__().execute
-            ex.assert_any_call("INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES ('testname','testisin','testwkn','testtyp','testcurrency','testname-typ','TEST')")
-            ex.assert_any_call('SELECT id FROM testdb.stock WHERE isin = testisin')
+            ex.assert_any_call("""INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES ('testname','testisin','testwkn','testtyp','testcurrency','testname-typ','TEST')""")
+            ex.assert_any_call("""SELECT id FROM testdb.stock WHERE isin = 'testisin'""")
 
-    def test_printCallsForDevTests(self):
+    def test_helpDevelopingTests(self):
             res = self.x._insertNewStockRow(newStock, 'testdb', self.x.conn)
             cur = self.x.conn.cursor().__enter__()
             print(cur.execute.call_args_list)

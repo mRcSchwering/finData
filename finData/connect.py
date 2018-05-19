@@ -69,7 +69,7 @@ class Connector(object):
         with conn.cursor() as cur:
             cur.execute(cls._insertStatement(schema, 'stock', cols, vals))
             cur.execute(
-                """SELECT id FROM {sc}.stock WHERE {unq} = {isin}"""
+                """SELECT id FROM {sc}.stock WHERE {unq} = '{isin}'"""
                 .format(sc=schema, unq=AsIs(cls.unique_const), isin=row['isin'])
             )
             stockId = cur.fetchone()
