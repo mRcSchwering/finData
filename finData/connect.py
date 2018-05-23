@@ -51,12 +51,13 @@ class Connector(object):
     @classmethod
     def _insertNewStockRow(cls, row, schema, conn):
         """INSERT dict of new stock into stock table, return the assigned id"""
-        cols = cls.prim_cols \
-            .replace("'", "").replace('"', '') \
-            .replace("{", "").replace("}", "")
+        cols = cls._extractColNames(cls.prim_cols)
         vals = [cls.prim_cols.format(**row)]
         with conn.cursor() as cur:
-            cur.execute(cls._insertStatement(schema, 'stock', cols, vals))
+            res = Connector._insertIfUnique(cur, cls._insertStatement(schema, 'stock', cols, vals))
+            if not res['valid']:
+                print('{stock} (isin: {isin}) not inserted, it already exists'
+                      .format(stock=row['name'], isin=row['isin']))
             cur.execute(
                 """SELECT id FROM {sc}.stock WHERE {unq} = '{isin}'"""
                 .format(sc=schema, unq=AsIs(cls.unique_const), isin=row['isin'])
@@ -65,8 +66,23 @@ class Connector(object):
         return stockId[0]
 
     @classmethod
+    def _insertIfUnique(cls, cur, sql):
+        valid = True
+        try:
+            cur.execute(sql)
+        except pg.IntegrityError:
+            valid = False
+        return {'valid': valid}
+
+    @classmethod
     def _insertStatement(cls, schema, table, cols, vals):
         """Statement string from column name str and value rows as list of str"""
         return """INSERT INTO {schema}.{table} ({cols}) VALUES {vals}""" \
                .format(schema=AsIs(schema), table=AsIs(table),
                        cols=cols, vals='({})'.format('),('.join(vals)))
+
+    @classmethod
+    def _extractColNames(cls, string):
+        return string \
+            .replace("'", "").replace('"', '') \
+            .replace("{", "").replace("}", "")

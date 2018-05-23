@@ -89,6 +89,7 @@ if [ $1 ]; then
         printf "Integration testing\n\n"
         printf "Running docker-compose up (w/ build)...\n\n"
         printf "need root\n"
+        sudo docker-compose build app
         sudo docker-compose up -d
         sleep 5
         printf "\n\nCreating DB $DB_NAME with schema $SCHEMA_NAME...\n\n"
