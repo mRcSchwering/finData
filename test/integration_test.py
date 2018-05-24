@@ -32,17 +32,29 @@ def main(db_name, schema_name, user, host, port, password):
             res = cur.fetchall()
             assert len(res) == 7
 
-        _log("Enter stock douplicate")
+        # _log("Insert stock douplicate")
+        # colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
+        # vals = """'Adidas','DE000A1EWWW0','A1EWWW','Aktie','EUR','Adidas-Aktie','ADS.DE'"""
+        # with conn.cursor() as cur:
+        #     try:
+        #         cur.execute("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
+        #                     .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
+        #     except pg.IntegrityError:
+        #         _log("IntegrityError raised, UNIQUE constraint enforced")
+        #     else:
+        #         raise AssertionError("UNIQUE constraint was not enforced")
+
+        _log("Insert bad NULL into stock")
         colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
-        vals = """'Adidas','DE000A1EWWW0','A1EWWW','Aktie','EUR','Adidas-Aktie','ADS.DE'"""
+        vals = """'test',NULL,'test','test','test','test','test'"""
         with conn.cursor() as cur:
             try:
                 cur.execute("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
                             .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
             except pg.IntegrityError:
-                _log("IntegrityError raised, UNIQUE constraint enforced")
+                _log("IntegrityError raised, NOT NULL constraint enforced")
             else:
-                raise AssertionError("UNIQUE constraint was not enforced")
+                raise AssertionError("NOT NULL constraint was not enforced")
 
 
 if __name__ == "__main__":

@@ -1,12 +1,59 @@
 # This Python file uses the following encoding: utf-8
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
-
-#x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
+#
+# x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
+#
+# x.insertStock('Adidas','DE000A1EWWW','A1WWW','Aktie','EUR','Adidas-Aktie1','ADS1.DE')
+#
+# with x._connect() as con:
+#     with con.cursor() as cur:
+#         cur.execute("""SELECT * FROM %(schema)s.stock WHERE id = %(id)s""",
+#                     {'schema': AsIs(x.schema_name), 'id': 1})
+#         res = cur.fetchall()
+# res
+#
+# # enter NULL
+#
+# vals = "'test',NULL,'test','test','test','test','test'"
+# with x._connect() as con:
+#     with con.cursor() as cur:
+#         cur.execute("""SELECT * FROM %(schema)s.stock WHERE id = %(id)s""",
+#                     {'schema': AsIs(x.schema_name), 'id': 1})
+#         res = cur.fetchall()
+# res
 
 
 class Connector(object):
     """DB Connector for SELECTing and INSERTing data"""
+
+    def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
+        with self.conn as con:
+
+            # check out if stock exists
+            with con.cursor() as cur:
+                cur.execute("""SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s""",
+                            {'schema': AsIs(self.schema_name), 'isin': isin})
+                res = cur.fetchall()
+
+            # set id if it exists already
+            if len(res) > 0:
+                print('{name} (isin: {isin}) not inserted, it already exists'
+                      .format(name=name, isin=isin))
+                self.stock_id = res[0][0]
+
+            # insert and get id if it didnt exists
+            else:
+                with con.cursor() as cur:
+                    cur.execute(
+                        """INSERT INTO %(schema)s.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""",
+                        {'schema': AsIs(self.schema_name), 'name': name, 'isin': isin, 'wkn': wkn, 'typ': typ, 'currency': currency, 'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
+                    )
+                    cur.execute("""SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s""",
+                                {'schema': AsIs(self.schema_name), 'isin': isin})
+                    res = cur.fetchall()
+                print('{name} (isin: {isin}) inserted'.format(name=name, isin=isin))
+                self.stock_id = res[0][0]
 
     tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk', 'divid', 'hist']
 
