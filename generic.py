@@ -76,7 +76,28 @@ DAX = [
         'avan_ticker': 'DB1.DE'
     }
 ]
-DAX = DAX[:3]
+
+i = 4
+aktie = fDs.Scraper(DAX[i]['name'], DAX[i]['typ'], DAX[i]['wkn'],
+                    DAX[i]['isin'], DAX[i]['currency'],
+                    DAX[i]['boerse_name'], DAX[i]['avan_ticker'])
+aktie.getDividendTable()
+aktie.getFundamentalTables()
+aktie.getHistoricPrices(onlyLast100=True)
+data[aktie.avan_ticker] = {
+    "guv": aktie.get('guv'),
+    "bilanz": aktie.get('bilanz'),
+    "kennza": aktie.get('kennza'),
+    "rentab": aktie.get('rentab'),
+    "person": aktie.get('person'),
+    "marktk": aktie.get('marktk'),
+    "divid": aktie.get('divid'),
+    "hist": aktie.get('hist')
+}
+
+
+
+DAX = DAX[4]
 
 data = {}
 for i in range(len(DAX)):

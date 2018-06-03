@@ -4,6 +4,8 @@ from unittest.mock import patch
 from unittest.mock import MagicMock
 import finData.connect
 import psycopg2 as pg
+import pandas as pd
+import datetime as dt
 import unittest
 import sys
 import io
@@ -14,10 +16,10 @@ connList = ['findata', 'testdb', 'postgres', '127.0.0.1', 5432]
 oldStock = {'name': 'o', 'isin': 'o', 'wkn': 'o', 'typ': 'o', 'currency': 'o',
             'boerse_name': 'o', 'avan_ticker': 'o'}
 
-oldStockSQL = ("""INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
-               """VALUES ('oldname','oldisin','oldwkn','oldtyp','oldcurrency','oldname-typ','TEST')""")
-
-queryRes = [(1,), (2,), (3,), (4,), (5,), (6,), (7,), ]
+oldStockSQL = (
+    """INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
+    """VALUES ('oldname','oldisin','oldwkn','oldtyp','oldcurrency','oldname-typ','TEST')"""
+)
 
 
 def mockDBconnect(mockDB):
@@ -32,31 +34,163 @@ def mockDBconnect(mockDB):
     return conn
 
 
+class ConnectorSetUp(unittest.TestCase):
+
+    def setUp(self):
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = None
+            self.x = finData.connect.Connector(*connList)
+
+    def test_insertStatementsProperlyPrepared(self):
+        sts = self.x.insert_statements
+        self.assertEqual(list(sts.keys()).sort(),
+                         ['person', 'marktk'].sort())
+        person = ('INSERT INTO %(schema_name)s.%(table_name)s '
+                  '(stock_id,year,personal,aufwand,umsatz,gewinn) '
+                  'VALUES (%(stock_id)s,%(year)s,%(personal)s,%(aufwand)s,%(umsatz)s,%(gewinn)s)')
+        self.assertEqual(sts['person'], person)
+
+
+class CustomSQL(unittest.TestCase):
+
+    def setUp(self):
+        mockDB = MagicMock()
+        mockDB.fetchall = MagicMock(return_value='fetched')
+
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = mockDBconnect(mockDB)
+            self.x = finData.connect.Connector(*connList)
+
+    def test_fetchIsWorking(self):
+        res = self.x._customSQL('a statement', fetch=False)
+        self.assertIsNone(res)
+        res = self.x._customSQL('a statement', fetch=True)
+        self.assertEqual(res, 'fetched')
+
+    def test_correctCursorCalls(self):
+        self.x._customSQL('a statement', fetch=True)
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, 1)
+        self.assertEqual(cur.fetchall.call_count, 1)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0], 'a statement')
+
+
+class InsertRow(unittest.TestCase):
+
+    def setUp(self):
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = MagicMock()
+            self.x = finData.connect.Connector(*connList)
+
+    def test_correctCursorCalls(self):
+        row = pd.DataFrame({'A': [1], 'B': [2]})
+        self.x._insertRow(row, 'stockId', 'person')
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, 1)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        st = ('INSERT INTO %(schema_name)s.%(table_name)s '
+              '(stock_id,year,personal,aufwand,umsatz,gewinn) '
+              'VALUES (%(stock_id)s,%(year)s,%(personal)s,%(aufwand)s,%(umsatz)s,%(gewinn)s)')
+        self.assertEqual(calls[0], st)
+
+
+class UpdateYearTables(unittest.TestCase):
+
+    def setUp(self):
+        mockDB = MagicMock()
+        mockDB.fetchone = MagicMock(return_value=(2016,))
+        # maximum year for each table is returned
+
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = mockDBconnect(mockDB)
+            self.x = finData.connect.Connector(*connList)
+
+    def test_correctCursorCalls(self):
+        self.x._updateYearTables(MagicMock(), 1)
+
+        # TODO: set to only 2 for trying out
+        nYearTables = 2
+        #nYearTables = 6
+
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, nYearTables)
+        self.assertEqual(cur.fetchone.call_count, nYearTables)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0], 'SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s')
+
+    # def test_scraperCouldntGetTable(self):
+    #     scraper = MagicMock()
+    #     scraper.get = MagicMock(side_effect=ValueError)
+    #
+    #     # TODO: from here on down doesnt work yet
+    #
+    #     capture = io.StringIO()
+    #     self.x._updateYearTables(scraper, 1)
+    #     sys.stdout = sys.__stdout__
+    #     self.assertEqual(capture.getvalue(), 'xx')
+
+
+class UpdateYearTablesUnnecessary(unittest.TestCase):
+
+    def setUp(self):
+        thisYear = dt.datetime.now().year
+        mockDB = MagicMock()
+        mockDB.fetchone = MagicMock(return_value=(thisYear,))
+        # this year, so no entry necessary
+
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = mockDBconnect(mockDB)
+            self.x = finData.connect.Connector(*connList)
+
+    def test_correctCursorCalls(self):
+        self.x._updateYearTables(MagicMock(), 1)
+
+        # TODO: set to only 2 for trying out
+        nYearTables = 2
+        #nYearTables = 6
+
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, nYearTables)
+        self.assertEqual(cur.fetchone.call_count, nYearTables)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0], 'SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s')
+
+
 class InsertNewStock(unittest.TestCase):
 
     def setUp(self):
         self.newStock = ['n'] * 7
         mockDB = MagicMock()
         mockDB.fetchall = MagicMock(return_value=[])
+        # 1st fetch would return [] (=stock didnt exist before)
 
         with patch('finData.connect.Connector._connect') as connect:
             connect.return_value = mockDBconnect(mockDB)
             self.x = finData.connect.Connector(*connList)
 
     def test_InsertedStockIsPrinted(self):
-            capture = io.StringIO()
-            with self.assertRaises(IndexError):
-                sys.stdout = capture
-                self.x.insertStock(*self.newStock)
-            sys.stdout = sys.__stdout__
-            self.assertEqual(capture.getvalue(), 'n (isin: n) inserted\n')
+        capture = io.StringIO()
+        with self.assertRaises(IndexError):
+            sys.stdout = capture
+            self.x.insertStock(*self.newStock)
+        sys.stdout = sys.__stdout__
+        self.assertEqual(capture.getvalue(), 'n (isin: n) inserted\n')
 
     def test_correctCursorCalls(self):
-            with self.assertRaises(IndexError):
-                self.x.insertStock(*self.newStock)
-            cur = self.x.conn.__enter__().cursor().__enter__()
-            self.assertEqual(cur.execute.call_count, 3)
-            self.assertEqual(cur.fetchall.call_count, 2)
+        with self.assertRaises(IndexError):
+            self.x.insertStock(*self.newStock)
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, 3)
+        self.assertEqual(cur.fetchall.call_count, 2)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0],
+                         'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
+        self.assertEqual(calls[1],
+                         ('INSERT INTO %(schema)s.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) '
+                          'VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)'))
+        self.assertEqual(calls[2],
+                         'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
 
 
 class InsertExistingStock(unittest.TestCase):
@@ -65,94 +199,68 @@ class InsertExistingStock(unittest.TestCase):
         self.stock = ['n'] * 7
         mockDB = MagicMock()
         mockDB.fetchall = MagicMock(return_value=[(1,)])
+        # 1st fetch would return sth (=stock was already entered before)
 
         with patch('finData.connect.Connector._connect') as connect:
             connect.return_value = mockDBconnect(mockDB)
             self.x = finData.connect.Connector(*connList)
 
-    def test_InsertedStockIsPrinted(self):
-            capture = io.StringIO()
-            sys.stdout = capture
-            self.x.insertStock(*self.stock)
-            sys.stdout = sys.__stdout__
-            self.assertEqual(capture.getvalue(), 'n (isin: n) not inserted, it already exists\n')
+    def test_NotInsertedStockIsPrinted(self):
+        capture = io.StringIO()
+        sys.stdout = capture
+        self.x.insertStock(*self.stock)
+        sys.stdout = sys.__stdout__
+        self.assertEqual(capture.getvalue(),
+                         'n (isin: n) not inserted, it already exists\n')
 
     def test_stockIdIsCorrect(self):
-            self.x.insertStock(*self.stock)
-            self.assertEqual(self.x.stock_id, 1)
+        self.x.insertStock(*self.stock)
+        self.assertEqual(self.x.stock_id, 1)
 
     def test_correctCursorCalls(self):
-            self.x.insertStock(*self.stock)
-            cur = self.x.conn.__enter__().cursor().__enter__()
-            self.assertEqual(cur.execute.call_count, 1)
-            self.assertEqual(cur.fetchall.call_count, 1)
+        self.x.insertStock(*self.stock)
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, 1)
+        self.assertEqual(cur.fetchall.call_count, 1)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0],
+                         'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
 
-#
-#
-# class WithoutConnection(unittest.TestCase):
-#
-#     def setUp(self):
-#         with patch('finData.connect.Connector._connect') as mockCon:
-#             mockCon.return_value = "x"
-#             self.x = finData.connect.Connector(*connList)
-#
-#     def test_StockColnamesExtractedCorrectly(self):
-#         prim_cols = ("'{name}','{isin}','{wkn}','{typ}','{currency}',"
-#                      "'{boerse_name}','{avan_ticker}'")
-#         exp = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
-#         res = self.x._extractColNames(prim_cols)
-#         self.assertEqual(exp, res)
-#
-#     def test_properInsertStatements(self):
-#         colNames = 'col1, col2'
-#         colVals = ["'x',1", "'y', 2"]
-#         exp = """INSERT INTO schem.tab (col1, col2) VALUES ('x',1),('y', 2)"""
-#         res = self.x._insertStatement('schem', 'tab', colNames, colVals)
-#         self.assertEqual(res, exp)
-#
-#
-# class InsertNewStockRow(unittest.TestCase):
+
+# class UpdateData(unittest.TestCase):
 #
 #     def setUp(self):
-#         def enforceUnique(sql):
-#             if sql == oldStockSQL:
-#                 raise pg.IntegrityError()
 #         mockDB = MagicMock()
-#         mockDB.execute = MagicMock(side_effect=enforceUnique)
-#         mockDB.fetchone = MagicMock(return_value=[1])
+#         existing = [(1, 'nameA', 'isinA'), (2, 'nameB', 'isinB')]
+#         mockDB.fetchall = MagicMock(return_value=existing)
+#         # returns list of existing stock by id, name, isin
 #
 #         with patch('finData.connect.Connector._connect') as connect:
 #             connect.return_value = mockDBconnect(mockDB)
 #             self.x = finData.connect.Connector(*connList)
 #
-#     def test_mockDBworks(self):
-#             res = self.x._insertNewStockRow(newStock, 'testdb', self.x.conn)
-#             self.assertEqual(res, 1)
+#     def test_correctCursorCalls(self):
+#         with patch('finData.connect.Connector._updateSingleStock') as updateSingleStock:
+#             updateSingleStock.return_value = None
+#             self.x.updateData()
+#         cur = self.x.conn.__enter__().cursor().__enter__()
+#         self.assertEqual(cur.execute.call_count, 1)
+#         self.assertEqual(cur.fetchall.call_count, 1)
+#         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+#         self.assertEqual(calls[0], 'SELECT id, name, isin FROM %(schema)s.stock')
 #
-#     def test_exexuteWasProperlyCalled(self):
-#             res = self.x._insertNewStockRow(newStock, 'testdb', self.x.conn)
-#             ex = self.x.conn.cursor().__enter__().execute
-#             ex.assert_any_call("""INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES ('testname','testisin','testwkn','testtyp','testcurrency','testname-typ','TEST')""")
-#             ex.assert_any_call("""SELECT id FROM testdb.stock WHERE isin = 'testisin'""")
+#     def test_progressIsPrinted(self):
+#         capture = io.StringIO()
+#         sys.stdout = capture
+#         with patch('finData.connect.Connector._updateSingleStock') as updateSingleStock:
+#             updateSingleStock.return_value = None
+#             self.x.updateData()
+#         sys.stdout = sys.__stdout__
+#         self.assertEqual(('[1/2] Updating nameA (isinA)...done\n'
+#                           '[2/2] Updating nameB (isinB)...done\n'),
+#                          capture.getvalue())
 #
-#     def test_uniqueConstraintEnforced(self):
-#             capture = io.StringIO()
-#             sys.stdout = capture
-#             res = self.x._insertNewStockRow(oldStock, 'testdb', self.x.conn)
-#             sys.stdout = sys.__stdout__
-#             self.assertEqual(res, 1)
-#             self.assertEqual(capture.getvalue(), 'oldname (isin: oldisin) not inserted, it already exists\n')
 
-
-            #print(self.stock_id)
-
-    # def test_exexuteWasProperlyCalled(self):
-    #         res = self.x.insertStock(*newStock)
-    #         ex = self.x.conn.cursor().__enter__().execute
-            #ex.assert_any_call("""INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES ('testname','testisin','testwkn','testtyp','testcurrency','testname-typ','TEST')""")
-            #ex.assert_any_call("""SELECT id FROM testdb.stock WHERE isin = 'testisin'""")
-    #
-    # def test_uniqueConstraintEnforced(self):
 
 if __name__ == '__main__':
     unittest.main()

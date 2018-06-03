@@ -88,7 +88,7 @@ class Scraper(object):
     ]
 
     def __init__(self, name, typ, wkn, isin, currency,
-                 boerse_name, avan_ticker, isTest=False):
+                 boerse_name, avan_ticker):
         self.name = str(name)
         self.typ = str(typ)
         self.wkn = str(wkn)
@@ -102,7 +102,6 @@ class Scraper(object):
         self.existingTables = []
         self._resolve_boerse_urls()
         self.alphavantage_api_key = Scraper._configure_api()
-        self.isTest = isTest
 
     def getFundamentalTables(self,
                              ids=['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
@@ -342,6 +341,7 @@ class Scraper(object):
                     tmp[col['name']] = len(data['colnames']) * [float('NaN')]
             df = pd.DataFrame.from_dict(tmp)
             df = df[['year'] + [c['name'] for c in mapping]]
+            df.sort_values(by='year', inplace=True)
 
         if typ == 'divid':
             tmp = {}
@@ -353,6 +353,8 @@ class Scraper(object):
                     tmp[col['name']] = len(data['data']) * [float('NaN')]
             df = pd.DataFrame.from_dict(tmp)
             df = df[[c['name'] for c in mapping]]
+            df['datum'] = pd.to_datetime(df['datum'])
+            df.sort_values(by='datum', inplace=True)
 
         if typ == 'hist':
             df = pd.DataFrame \

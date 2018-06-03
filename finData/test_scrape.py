@@ -9,7 +9,7 @@ import json
 
 ads = ['Addidas AG', 'Aktie', 'A1EWWW', 'DE000A1EWWW0', 'EUR', 'Adidas-Aktie', 'ADS.DE']
 bion = ['BB Biotech', 'Aktie', 'A0NFN3', 'CH0038389992', 'CHF', 'BB-Biotech-Aktie', 'BION.SW']
-stock = ['Test AG', 'Aktie', 'XXXXX', 'XXXXX', 'EUR', 'abc.de', 'XXX.XX', True]
+stock = ['Test AG', 'Aktie', 'XXXXX', 'XXXXX', 'EUR', 'abc.de', 'XXX.XX']
 
 
 class Constructor(unittest.TestCase):
@@ -65,6 +65,13 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 7 * [float])
         self.assertEqual(df.shape, (9, 7))
 
+    def test_ascendingYearsInGUV(self):
+        df = GetFundamentalTables.x.get('guv')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
+
     def test_certainGUVvaluesAreCorrect(self):
         df = GetFundamentalTables.x.get('guv')
         self.assertAlmostEqual(df['EBIT'].values.tolist()[0], 508)
@@ -79,6 +86,13 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 11 * [float])
         self.assertEqual(df.shape, (9, 11))
 
+    def test_ascendingYearsInBilanz(self):
+        df = GetFundamentalTables.x.get('bilanz')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
+
     def test_certainBilanzValuesAreCorrect(self):
         df = GetFundamentalTables.x.get('bilanz')
         self.assertAlmostEqual(df['eigen_quote'].values.tolist()[0], 0.4249)
@@ -91,6 +105,13 @@ class GetFundamentalTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], 9 * [float])
         self.assertEqual(df.shape, (9, 9))
+
+    def test_ascendingYearsInKennza(self):
+        df = GetFundamentalTables.x.get('kennza')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
 
     def test_certainKennzaValuesAreCorrect(self):
         df = GetFundamentalTables.x.get('kennza')
@@ -109,6 +130,13 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 5 * [float])
         self.assertEqual(df.shape, (9, 5))
 
+    def test_ascendingYearsInRentab(self):
+        df = GetFundamentalTables.x.get('rentab')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
+
     def test_certainRentabValuesAreCorrect(self):
         df = GetFundamentalTables.x.get('rentab')
         self.assertAlmostEqual(df['dividren'].values.tolist()[0], 0.0093)
@@ -122,6 +150,13 @@ class GetFundamentalTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], 5 * [float])
         self.assertEqual(df.shape, (9, 5))
 
+    def test_ascendingYearsInPerson(self):
+        df = GetFundamentalTables.x.get('person')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
+
     def test_certainPersonValuesAreCorrect(self):
         df = GetFundamentalTables.x.get('person')
         self.assertEqual(df['personal'].values.tolist()[0], 39596)
@@ -134,6 +169,13 @@ class GetFundamentalTables(unittest.TestCase):
         row = df.iloc[[0]].values.tolist()[0]
         self.assertEqual([type(d) for d in row], 3 * [float])
         self.assertEqual(df.shape, (9, 3))
+
+    def test_ascendingYearsInMarktk(self):
+        df = GetFundamentalTables.x.get('marktk')
+        lastYear = 0
+        for year in df['year']:
+            self.assertGreater(year - lastYear, 0)
+            lastYear = year
 
     def test_certainMarktkValuesAreCorrect(self):
         df = GetFundamentalTables.x.get('marktk')
@@ -161,10 +203,18 @@ class GetDividendTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], [datetime.date] + 3 * [float])
         self.assertEqual(df.shape, (22, 4))
 
+    def test_ascendingYearsInDivid(self):
+        df = GetDividendTables.x.get('divid')
+        lastYear = 0
+        for datum in df['datum']:
+            self.assertGreater(datum.year - lastYear, 0)
+            lastYear = datum.year
+
     def test_certainDividValuesAreCorrect(self):
         df = GetDividendTables.x.get('divid')
-        self.assertAlmostEqual(df['rendite'].values.tolist()[0], 0.0119)
-        self.assertTrue(math.isnan(df['rendite'].values.tolist()[1]))
+        self.assertTrue(df['rendite'].values.tolist()[20])
+        self.assertTrue(df['veraenderu'].values.tolist()[0])
+        self.assertAlmostEqual(df['rendite'].values.tolist()[0], 0.0019)
 
 
 class GetHistTables(unittest.TestCase):
@@ -185,6 +235,13 @@ class GetHistTables(unittest.TestCase):
         self.assertEqual([type(d) for d in row], [datetime.date] + 8 * [float])
         self.assertNotIsInstance(datetime.datetime, type(df.index.values[0]))
         self.assertTrue(df.index.values[0] < df.index.values[1])
+
+    def test_ascendingYearsInHist(self):
+        df = GetHistTables.x.get('hist')
+        lastDate = df.index.values[0]
+        for date in df.index.values[1:]:
+            self.assertTrue(date > lastDate)
+            lastDate = date
 
     def test_certainHistValuesAreCorrect(self):
         df = GetHistTables.x.get('hist')
