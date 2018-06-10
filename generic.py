@@ -1,10 +1,3 @@
-# TODO: erst scrape so weit erweitern, dass länglich daten. am besten pandas
-# TODO: Daten scrapen und als testdaten abspeichern: script bei data/testdata/ speichern
-
-# TODO: create_database.py erweitern, dass testdaten gelesen und in testDB geschrieben werden
-# TODO: multiple insert (https://stackoverflow.com/questions/8134602/psycopg2-insert-multiple-rows-with-one-query)
-
-
 # This Python file uses the following encoding: utf-8
 import finData.scrape as fDs
 import json

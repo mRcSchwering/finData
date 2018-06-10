@@ -10,16 +10,12 @@ import unittest
 import sys
 import io
 
-
+# pseudo connection info (will be mocked)
 connList = ['findata', 'testdb', 'postgres', '127.0.0.1', 5432]
 
-oldStock = {'name': 'o', 'isin': 'o', 'wkn': 'o', 'typ': 'o', 'currency': 'o',
-            'boerse_name': 'o', 'avan_ticker': 'o'}
-
-oldStockSQL = (
-    """INSERT INTO testdb.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
-    """VALUES ('oldname','oldisin','oldwkn','oldtyp','oldcurrency','oldname-typ','TEST')"""
-)
+# number of yearly, daily tables and tables with a date but yearly update
+nYearTables = 6
+nDateTables = 1
 
 
 def mockDBconnect(mockDB):
@@ -108,27 +104,26 @@ class UpdateYearTables(unittest.TestCase):
 
     def test_correctCursorCalls(self):
         self.x._updateYearTables(MagicMock(), 1)
-
-        # TODO: set to only 2 for trying out
-        nYearTables = 2
-        #nYearTables = 6
-
         cur = self.x.conn.__enter__().cursor().__enter__()
         self.assertEqual(cur.execute.call_count, nYearTables)
         self.assertEqual(cur.fetchone.call_count, nYearTables)
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0], 'SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s')
 
-    # def test_scraperCouldntGetTable(self):
-    #     scraper = MagicMock()
-    #     scraper.get = MagicMock(side_effect=ValueError)
-    #
-    #     # TODO: from here on down doesnt work yet
-    #
-    #     capture = io.StringIO()
-    #     self.x._updateYearTables(scraper, 1)
-    #     sys.stdout = sys.__stdout__
-    #     self.assertEqual(capture.getvalue(), 'xx')
+    def test_scraperCouldntGetTable(self):
+        scraper = MagicMock()
+        scraper.get = MagicMock(side_effect=ValueError)
+        expected = ("""Scaper didn't return Table guv... continuing without it\n"""
+                    """Scaper didn't return Table bilanz... continuing without it\n"""
+                    """Scaper didn't return Table kennza... continuing without it\n"""
+                    """Scaper didn't return Table rentab... continuing without it\n"""
+                    """Scaper didn't return Table person... continuing without it\n"""
+                    """Scaper didn't return Table marktk... continuing without it\n""")
+        capture = io.StringIO()
+        sys.stdout = capture
+        self.x._updateYearTables(scraper, 1)
+        sys.stdout = sys.__stdout__
+        self.assertEqual(capture.getvalue(), expected)
 
 
 class UpdateYearTablesUnnecessary(unittest.TestCase):
@@ -145,11 +140,6 @@ class UpdateYearTablesUnnecessary(unittest.TestCase):
 
     def test_correctCursorCalls(self):
         self.x._updateYearTables(MagicMock(), 1)
-
-        # TODO: set to only 2 for trying out
-        nYearTables = 2
-        #nYearTables = 6
-
         cur = self.x.conn.__enter__().cursor().__enter__()
         self.assertEqual(cur.execute.call_count, nYearTables)
         self.assertEqual(cur.fetchone.call_count, nYearTables)
@@ -171,8 +161,8 @@ class InsertNewStock(unittest.TestCase):
 
     def test_InsertedStockIsPrinted(self):
         capture = io.StringIO()
+        sys.stdout = capture
         with self.assertRaises(IndexError):
-            sys.stdout = capture
             self.x.insertStock(*self.newStock)
         sys.stdout = sys.__stdout__
         self.assertEqual(capture.getvalue(), 'n (isin: n) inserted\n')
@@ -225,6 +215,57 @@ class InsertExistingStock(unittest.TestCase):
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0],
                          'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
+
+
+class UpdateDateTables(unittest.TestCase):
+
+    def setUp(self):
+        maximumReturnDate = dt.datetime(2016, 1, 1).date()
+        mockDB = MagicMock()
+        mockDB.fetchone = MagicMock(return_value=(maximumReturnDate,))
+
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = mockDBconnect(mockDB)
+            self.x = finData.connect.Connector(*connList)
+
+    def test_correctCursorCalls(self):
+        self.x._updateDateTables(MagicMock(), 1)
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, nDateTables)
+        self.assertEqual(cur.fetchone.call_count, nDateTables)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0], 'SELECT MAX(datum) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s')
+
+    def test_scraperCouldntGetTable(self):
+        scraper = MagicMock()
+        scraper.get = MagicMock(side_effect=ValueError)
+        expected = """Scaper didn't return Table divid... continuing without it\n"""
+        capture = io.StringIO()
+        sys.stdout = capture
+        self.x._updateDateTables(scraper, 1)
+        sys.stdout = sys.__stdout__
+        self.assertEqual(capture.getvalue(), expected)
+
+
+class UpdateDateTablesUnnecessary(unittest.TestCase):
+
+    def setUp(self):
+        thisYear = dt.datetime.now().date()
+        mockDB = MagicMock()
+        mockDB.fetchone = MagicMock(return_value=(thisYear,))
+        # this year, so no entry necessary
+
+        with patch('finData.connect.Connector._connect') as connect:
+            connect.return_value = mockDBconnect(mockDB)
+            self.x = finData.connect.Connector(*connList)
+
+    def test_correctCursorCalls(self):
+        self.x._updateDateTables(MagicMock(), 1)
+        cur = self.x.conn.__enter__().cursor().__enter__()
+        self.assertEqual(cur.execute.call_count, nDateTables)
+        self.assertEqual(cur.fetchone.call_count, nDateTables)
+        calls = [str(c[1][0]) for c in cur.execute.mock_calls]
+        self.assertEqual(calls[0], 'SELECT MAX(datum) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s')
 
 
 # class UpdateData(unittest.TestCase):

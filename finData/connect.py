@@ -5,22 +5,28 @@ import datetime as dt
 import pandas as pd
 import finData.scrape as fDs
 
-# ./helper.sh start server
-# load conector
+# # ./helper.sh start server
+# # load conector
 # x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
 #
 # x._customSQL("SELECT * FROM testdb.marktk WHERE year > 2016", fetch=True)
-# x._customSQL("SELECT * FROM testdb.person WHERE year > 2016", fetch=True)
+# res = x._customSQL("SELECT MAX(datum) FROM testdb.divid WHERE stock_id = 1", fetch=True)
+# res[0][0].year
+#
 #
 # x._customSQL(("""INSERT INTO testdb.marktk (stock_id,year,zahl_aktien,marktkapita)"""
 #              """ VALUES (1, 9999, NULL,0.99)"""))
 # x._customSQL("""DELETE FROM testdb.marktk WHERE year = 9999""")
 # x._customSQL("""DELETE FROM testdb.marktk WHERE year = 2017""")
 #
+# df = x.updateData()
+# row = df.loc[[d.year == 2011 for d in df['datum']]]
+# row = row.where((pd.notnull(row)), None)
+# records = row.to_dict(orient='records')[0]
 #
 # ids = x.updateData()
-#today = dt.datetime.now().date()
-#today.day
+# today = dt.datetime.now().date()
+# today.day
 
 
 class Connector(object):
@@ -29,10 +35,22 @@ class Connector(object):
     # update limit in years (going into the past from today)
     update_limit = 20
 
+    # tables with yearly or daily indices (and updates)
+    # or with a date index which represents the whole year
+    year_tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk']
+    day_tables = ['hist']
+    date_tables = ['divid']
+
     # column definitions as in DB schema
     col_def = {
+        'guv': ['stock_id', 'year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena'],
+        'bilanz': ['stock_id', 'year', 'umlaufvermo', 'anlagevermo', 'sum_aktiva', 'kurzfr_verb', 'langfr_verb', 'gesamt_verb', 'eigenkapita', 'sum_passiva', 'eigen_quote', 'fremd_quote'],
+        'kennza': ['stock_id', 'year', 'gewinn_verw', 'gewinn_unvw', 'umsatz', 'buchwert', 'dividende', 'KGV', 'KBV', 'KUV'],
+        'rentab': ['stock_id', 'year', 'umsatzren', 'eigenkapren', 'geskapren', 'dividren'],
         'person': ['stock_id', 'year', 'personal', 'aufwand', 'umsatz', 'gewinn'],
-        'marktk': ['stock_id', 'year', 'zahl_aktien', 'marktkapita']
+        'marktk': ['stock_id', 'year', 'zahl_aktien', 'marktkapita'],
+        'divid': ['stock_id', 'datum', 'dividende', 'veraenderu', 'rendite'],
+        'hist': ['stock_id', 'datum', 'open', 'high', 'low', 'close', 'adj_close', 'volume', 'divid_amt', 'split_coef']
     }
 
     def __init__(self, db_name, schema_name, user, host, port, password=""):
@@ -61,7 +79,7 @@ class Connector(object):
                       .format(name=name, isin=isin))
                 self.stock_id = res[0][0]
 
-            # insert and get id if it didnt exists
+            # insert and get id if it didnt exist
             else:
                 with con.cursor() as cur:
                     cur.execute(
@@ -82,16 +100,16 @@ class Connector(object):
                             {'schema': AsIs(self.schema_name)})
                 stockIds = cur.fetchall()
 
-            # TODO: reduce while trying out
-            stockIds = stockIds[:1]
+        # TODO: reduce while trying out
+        stockIds = stockIds[:1]
 
-            n = len(stockIds)
-            for i in range(n):
-                print("[{i}/{n}] Updating {name} ({isin})..."
-                      .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]),
-                      end='')
-                self._updateSingleStock(stockIds[i][0])
-                print("done")
+        n = len(stockIds)
+        for i in range(n):
+            print("[{i}/{n}] Updating {name} ({isin})..."
+                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]),
+                  end='')
+            self._updateSingleStock(stockIds[i][0])
+            print("done")
         return True
 
     def _updateSingleStock(self, stockId):
@@ -115,37 +133,59 @@ class Connector(object):
                             boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
                             avan_ticker=stockInfo['avan_ticker'])
         self._updateYearTables(stock, stockId)
+        self._updateDateTables(stock, stockId)
 
-    def _updateYearTables(self, stock, stockId):
-        """Bring tables with yearly entries up to todays date for a single stock symbol"""
-
-        # TODO: only 2 small tables for tryout
-        #yearTables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk']
-        yearTables = ['person', 'marktk']
-
+    def _updateDateTables(self, stock, stockId):
+        """Bring tables with yearly entries based on a single date up to todays date for a single stock symbol"""
         thisYear = dt.datetime.now().year
         minimumYear = thisYear - Connector.update_limit
         with self.conn as con:
             with con.cursor() as cur:
                 lastEnteredYears = [minimumYear]
-                for tab in yearTables:
-                    cur.execute("""SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s""",
+                for tab in Connector.date_tables:
+                    cur.execute("""SELECT MAX(datum) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s""",
                                 {'schema': AsIs(self.schema_name), 'tab': AsIs(tab), 'id': stockId})
-                    lastEnteredYears.append(cur.fetchone()[0])
-            lastEnteredYear = max(x for x in lastEnteredYears if x is not None)
-            missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
+                    lastEnteredYears.append(cur.fetchone()[0].year)
+        lastEnteredYear = max(x for x in lastEnteredYears if x is not None)
+        missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
 
         if len(missingYears) > 0:
-            stock.getFundamentalTables()
-            for tab in yearTables:
+            stock.getDividendTable()
+            for tab in Connector.date_tables:
                 try:
                     df = stock.get(tab)
                 except ValueError:
                     print(("""Scaper didn't return Table {tab}... """
                            """continuing without it""").format(tab=tab))
                 else:
-                    print('\ntable: ' + tab)
-                    print(df.iloc[[0]].values.tolist()[0])
+                    for year in missingYears:
+                        row = df.loc[[d.year == year for d in df['datum']]]
+                        print(row)
+                        self._insertRow(row, stockId, tab)
+
+    def _updateYearTables(self, stock, stockId):
+        """Bring tables with yearly entries up to todays date for a single stock symbol"""
+        thisYear = dt.datetime.now().year
+        minimumYear = thisYear - Connector.update_limit
+        with self.conn as con:
+            with con.cursor() as cur:
+                lastEnteredYears = [minimumYear]
+                for tab in Connector.year_tables:
+                    cur.execute("""SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s""",
+                                {'schema': AsIs(self.schema_name), 'tab': AsIs(tab), 'id': stockId})
+                    lastEnteredYears.append(cur.fetchone()[0])
+        lastEnteredYear = max(x for x in lastEnteredYears if x is not None)
+        missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
+
+        if len(missingYears) > 0:
+            stock.getFundamentalTables()
+            for tab in Connector.year_tables:
+                try:
+                    df = stock.get(tab)
+                except ValueError:
+                    print(("""Scaper didn't return Table {tab}... """
+                           """continuing without it""").format(tab=tab))
+                else:
                     for year in missingYears:
                         row = df.loc[df['year'] == year]
                         self._insertRow(row, stockId, tab)
