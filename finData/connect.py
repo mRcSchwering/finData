@@ -5,13 +5,18 @@ import datetime as dt
 import pandas as pd
 import finData.scrape as fDs
 
+# TODO refactor
+# TODO bessere tests
+# TODO update data tests
+
 # # ./helper.sh start server
 # # load conector
 # x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
 #
 # x._customSQL("SELECT * FROM testdb.marktk WHERE year > 2016", fetch=True)
-# res = x._customSQL("SELECT MAX(datum) FROM testdb.divid WHERE stock_id = 1", fetch=True)
-# res[0][0].year
+# res = x._customSQL("SELECT MAX(datum) FROM testdb.hist WHERE stock_id = 1", fetch=True)
+# res = x._customSQL("SELECT * FROM testdb.hist WHERE stock_id = 1 AND datum = ( SELECT MAX(datum) FROM testdb.hist WHERE stock_id = 1 )", fetch=True)
+# res
 #
 #
 # x._customSQL(("""INSERT INTO testdb.marktk (stock_id,year,zahl_aktien,marktkapita)"""
@@ -106,10 +111,9 @@ class Connector(object):
         n = len(stockIds)
         for i in range(n):
             print("[{i}/{n}] Updating {name} ({isin})..."
-                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]),
-                  end='')
+                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]))
             self._updateSingleStock(stockIds[i][0])
-            print("done")
+            print("...done")
         return True
 
     def _updateSingleStock(self, stockId):
@@ -132,21 +136,49 @@ class Connector(object):
                             currency=stockInfo['currency'], wkn=stockInfo['wkn'],
                             boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
                             avan_ticker=stockInfo['avan_ticker'])
-        self._updateYearTables(stock, stockId)
-        self._updateDateTables(stock, stockId)
+        # self._updateYearTables(stock, stockId)
+        # self._updateDateTables(stock, stockId)
+        self._updateDayTables(stock, stockId)
+
+    def _updateDayTables(self, stock, stockId):
+        """Bring tables with dayly entries up to todays date for a single stock symbol"""
+
+        today = dt.date.today()
+        aveDaysPerYear = 365.24
+        minimumDay = today - dt.timedelta(days=Connector.update_limit * aveDaysPerYear)
+
+        dates = self._getLastEnteredTimepoints('datum', stockId, Connector.day_tables)
+        lastEnteredDay = max(x for x in dates + [minimumDay] if x is not None)
+
+        nMissingDays = today - lastEnteredDay
+        missingDays = [today - dt.timedelta(days=x) for x in range(1, nMissingDays.days)]
+
+        if len(missingDays) > 0:
+            if len(missingDays) > 100:
+                stock.getHistoricPrices(onlyLast100=False)
+            else:
+                stock.getHistoricPrices(onlyLast100=True)
+            for tab in Connector.day_tables:
+                try:
+                    df = stock.get(tab)
+                except ValueError:
+                    print(("""Scaper didn't return Table {tab}... """
+                           """continuing without it""").format(tab=tab))
+                else:
+                    for day in missingDays:
+                        row = df.loc[[d == day for d in df['datum']]]
+                        self._insertRow(row, stockId, tab)
 
     def _updateDateTables(self, stock, stockId):
         """Bring tables with yearly entries based on a single date up to todays date for a single stock symbol"""
-        thisYear = dt.datetime.now().year
+
+        thisYear = dt.date.today().year
         minimumYear = thisYear - Connector.update_limit
-        with self.conn as con:
-            with con.cursor() as cur:
-                lastEnteredYears = [minimumYear]
-                for tab in Connector.date_tables:
-                    cur.execute("""SELECT MAX(datum) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s""",
-                                {'schema': AsIs(self.schema_name), 'tab': AsIs(tab), 'id': stockId})
-                    lastEnteredYears.append(cur.fetchone()[0].year)
-        lastEnteredYear = max(x for x in lastEnteredYears if x is not None)
+
+        dates = self._getLastEnteredTimepoints('datum', stockId, Connector.date_tables)
+
+        years = [d.year for d in dates] + [minimumYear]
+        lastEnteredYear = max(x for x in years if x is not None)
         missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
 
         if len(missingYears) > 0:
@@ -160,22 +192,17 @@ class Connector(object):
                 else:
                     for year in missingYears:
                         row = df.loc[[d.year == year for d in df['datum']]]
-                        print(row)
                         self._insertRow(row, stockId, tab)
 
     def _updateYearTables(self, stock, stockId):
         """Bring tables with yearly entries up to todays date for a single stock symbol"""
-        thisYear = dt.datetime.now().year
+        thisYear = dt.date.today().year
         minimumYear = thisYear - Connector.update_limit
-        with self.conn as con:
-            with con.cursor() as cur:
-                lastEnteredYears = [minimumYear]
-                for tab in Connector.year_tables:
-                    cur.execute("""SELECT MAX(year) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s""",
-                                {'schema': AsIs(self.schema_name), 'tab': AsIs(tab), 'id': stockId})
-                    lastEnteredYears.append(cur.fetchone()[0])
-        lastEnteredYear = max(x for x in lastEnteredYears if x is not None)
-        missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
+
+        years = self._getLastEnteredTimepoints('year', stockId, Connector.year_tables)
+
+        highestYear = max(x for x in years + [minimumYear] if x is not None)
+        missingYears = list(range(highestYear + 1, thisYear + 1))
 
         if len(missingYears) > 0:
             stock.getFundamentalTables()
@@ -190,7 +217,21 @@ class Connector(object):
                         row = df.loc[df['year'] == year]
                         self._insertRow(row, stockId, tab)
 
+    def _getLastEnteredTimepoints(self, colname, stockId, tables):
+        """Get last entered timepoint for a list of tables and a stock"""
+        query = """SELECT MAX(%(col)s) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s"""
+        lastEnteredTimepoints = []
+        with self.conn as con:
+            with con.cursor() as cur:
+                for tab in tables:
+                    args = {'col': AsIs(colname), 'tab': AsIs(tab),
+                            'schema': AsIs(self.schema_name), 'id': stockId}
+                    cur.execute(query, args)
+                    lastEnteredTimepoints.append(cur.fetchone()[0])
+        return lastEnteredTimepoints
+
     def _insertRow(self, row, stockId, table):
+        """Save row insert"""
         if len(row) > 0:
             row = row.where((pd.notnull(row)), None)
             records = row.to_dict(orient='records')[0]
