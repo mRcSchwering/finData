@@ -21,6 +21,10 @@ dateTables = ['divid']
 # the query used to get the last entered time point
 lastEnteredTimepointQuery = 'SELECT MAX(%(col)s) FROM %(schema)s.%(tab)s WHERE stock_id = %(id)s'
 
+# time period that is proposedly missing
+missingDays = 20
+missingYears = 5
+
 
 # message if scraper couldnt get a table
 def couldntScrapeString(tables):
@@ -111,10 +115,10 @@ class InsertRow(unittest.TestCase):
 class InsertNewStock(unittest.TestCase):
 
     def setUp(self):
-        # 1st fetch would return [] (=stock didnt exist before)
+        # 1st fetch would return () (=stock didnt exist before)
         self.newStock = ['n'] * 7
         mockDB = MagicMock()
-        mockDB.fetchall = MagicMock(return_value=[])
+        mockDB.fetchone = MagicMock(return_value=())
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_InsertedStockIsPrinted(self):
@@ -130,7 +134,7 @@ class InsertNewStock(unittest.TestCase):
             self.x.insertStock(*self.newStock)
         cur = getCursor(self.x)
         self.assertEqual(cur.execute.call_count, 3)
-        self.assertEqual(cur.fetchall.call_count, 2)
+        self.assertEqual(cur.fetchone.call_count, 2)
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0],
                          'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
@@ -147,7 +151,7 @@ class InsertExistingStock(unittest.TestCase):
         # 1st fetch would return id (=stock was already entered before)
         self.stock = ['n'] * 7
         mockDB = MagicMock()
-        mockDB.fetchall = MagicMock(return_value=[(1,)])
+        mockDB.fetchone = MagicMock(return_value=(1,))
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_NotInsertedStockIsPrinted(self):
@@ -166,7 +170,7 @@ class InsertExistingStock(unittest.TestCase):
         self.x.insertStock(*self.stock)
         cur = getCursor(self.x)
         self.assertEqual(cur.execute.call_count, 1)
-        self.assertEqual(cur.fetchall.call_count, 1)
+        self.assertEqual(cur.fetchone.call_count, 1)
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0],
                          'SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s')
@@ -175,8 +179,9 @@ class InsertExistingStock(unittest.TestCase):
 class UpdateYearTables(unittest.TestCase):
 
     def setUp(self):
+        ood = dt.date.today().year - missingYears
         mockDB = MagicMock()
-        mockDB.fetchone = MagicMock(return_value=(2016,))
+        mockDB.fetchone = MagicMock(return_value=(ood,))
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_correctCursorCalls(self):
@@ -186,6 +191,14 @@ class UpdateYearTables(unittest.TestCase):
         self.assertEqual(cur.fetchone.call_count, len(yearTables))
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0], lastEnteredTimepointQuery)
+
+    def test_correctStockCalls(self):
+        scraper = MagicMock()
+        scraper.get = MagicMock(return_value=MagicMock())
+        self.x._updateYearTables(scraper, 1)
+        self.assertEqual(scraper.mock_calls[0][0], 'getFundamentalTables')
+        for call in scraper.get.mock_calls:
+            self.assertIn(call[1][0], yearTables)
 
     def test_scraperCouldntGetTable(self):
         scraper = MagicMock()
@@ -197,11 +210,19 @@ class UpdateYearTables(unittest.TestCase):
         sys.stdout = sys.__stdout__
         self.assertEqual(capture.getvalue(), expected)
 
+    def test_inserts(self):
+        self.x._insertRow = MagicMock()
+        self.x._updateYearTables(MagicMock(), 1)
+        obj = self.x._insertRow
+        self.assertEqual(obj.call_count, missingYears * len(yearTables))
+        for call in obj.mock_calls:
+            self.assertEqual(call[1][1], 1)
+            self.assertIn(call[1][2], yearTables)
+
 
 class UpdateYearTablesUnnecessary(unittest.TestCase):
 
     def setUp(self):
-        # this year, so no entry necessary
         thisYear = dt.date.today().year
         mockDB = MagicMock()
         mockDB.fetchone = MagicMock(return_value=(thisYear,))
@@ -219,9 +240,9 @@ class UpdateYearTablesUnnecessary(unittest.TestCase):
 class UpdateDateTables(unittest.TestCase):
 
     def setUp(self):
-        notUpToDate = dt.datetime(2016, 1, 1).date()
+        ood = dt.date.today() - dt.timedelta(days=missingYears * 365.24)
         mockDB = MagicMock()
-        mockDB.fetchone = MagicMock(return_value=(notUpToDate,))
+        mockDB.fetchone = MagicMock(return_value=(ood,))
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_correctCursorCalls(self):
@@ -231,6 +252,14 @@ class UpdateDateTables(unittest.TestCase):
         self.assertEqual(cur.fetchone.call_count, len(dateTables))
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0], lastEnteredTimepointQuery)
+
+    def test_correctStockCalls(self):
+        scraper = MagicMock()
+        scraper.get = MagicMock(return_value=MagicMock())
+        self.x._updateDateTables(scraper, 1)
+        self.assertEqual(scraper.mock_calls[0][0], 'getDividendTable')
+        for call in scraper.get.mock_calls:
+            self.assertIn(call[1][0], dateTables)
 
     def test_scraperCouldntGetTable(self):
         scraper = MagicMock()
@@ -242,11 +271,19 @@ class UpdateDateTables(unittest.TestCase):
         sys.stdout = sys.__stdout__
         self.assertEqual(capture.getvalue(), expected)
 
+    def test_inserts(self):
+        self.x._insertRow = MagicMock()
+        self.x._updateDateTables(MagicMock(), 1)
+        obj = self.x._insertRow
+        self.assertEqual(obj.call_count, missingYears * len(dateTables))
+        for call in obj.mock_calls:
+            self.assertEqual(call[1][1], 1)
+            self.assertIn(call[1][2], dateTables)
+
 
 class UpdateDateTablesUnnecessary(unittest.TestCase):
 
     def setUp(self):
-        # today, so no entry necessary
         today = dt.date.today()
         mockDB = MagicMock()
         mockDB.fetchone = MagicMock(return_value=(today,))
@@ -264,9 +301,9 @@ class UpdateDateTablesUnnecessary(unittest.TestCase):
 class UpdateDayTables(unittest.TestCase):
 
     def setUp(self):
-        notUpToDate = dt.datetime(2016, 1, 1).date()
+        ood = dt.date.today() - dt.timedelta(days=missingDays + 1)
         mockDB = MagicMock()
-        mockDB.fetchone = MagicMock(return_value=(notUpToDate,))
+        mockDB.fetchone = MagicMock(return_value=(ood,))
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_correctCursorCalls(self):
@@ -277,6 +314,14 @@ class UpdateDayTables(unittest.TestCase):
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0], lastEnteredTimepointQuery)
 
+    def test_correctStockCalls(self):
+        scraper = MagicMock()
+        scraper.get = MagicMock(return_value=MagicMock())
+        self.x._updateDayTables(scraper, 1)
+        self.assertEqual(scraper.mock_calls[0][0], 'getHistoricPrices')
+        for call in scraper.get.mock_calls:
+            self.assertIn(call[1][0], dayTables)
+
     def test_scraperCouldntGetTable(self):
         scraper = MagicMock()
         scraper.get = MagicMock(side_effect=ValueError)
@@ -286,6 +331,15 @@ class UpdateDayTables(unittest.TestCase):
         self.x._updateDayTables(scraper, 1)
         sys.stdout = sys.__stdout__
         self.assertEqual(capture.getvalue(), expected)
+
+    def test_inserts(self):
+        self.x._insertRow = MagicMock()
+        self.x._updateDayTables(MagicMock(), 1)
+        obj = self.x._insertRow
+        self.assertEqual(obj.call_count, missingDays * len(dayTables))
+        for call in obj.mock_calls:
+            self.assertEqual(call[1][1], 1)
+            self.assertIn(call[1][2], dayTables)
 
 
 class UpdateDayTablesUnnecessary(unittest.TestCase):
@@ -304,6 +358,45 @@ class UpdateDayTablesUnnecessary(unittest.TestCase):
         self.assertEqual(cur.fetchone.call_count, len(dayTables))
         calls = [str(c[1][0]) for c in cur.execute.mock_calls]
         self.assertEqual(calls[0], lastEnteredTimepointQuery)
+
+
+class UpdateData(unittest.TestCase):
+
+    def setUp(self):
+        self.stocks = [(1, 'a', 'A'), (1, 'b', 'B')]
+        mockDB = MagicMock()
+        mockDB.fetchall = MagicMock(return_value=self.stocks)
+        self.x = patchConnect(mockDBconnect(mockDB))
+
+    def test_correctCalls(self):
+        self.x._updateSingleStock = MagicMock()
+        self.x.updateData()
+        self.assertEqual(self.x._updateSingleStock.call_count, len(self.stocks))
+
+
+class UpdateSingleStock(unittest.TestCase):
+
+    def setUp(self):
+        self.stock = tuple(['s'] * 7)
+        mockDB = MagicMock()
+        mockDB.fetchall = MagicMock(return_value=self.stock)
+        self.x = patchConnect(mockDBconnect(mockDB))
+
+    def test_correctCalls(self):
+        self.x._updateYearTables = MagicMock()
+        self.x._updateDateTables = MagicMock()
+        self.x._updateDayTables = MagicMock()
+        with patch('finData.scrape.Scraper.__init__') as scraper:
+            scraper.return_value = None
+            self.x._updateSingleStock(1)
+        cur = getCursor(self.x)
+        self.assertEqual(cur.execute.call_count, 1)
+        self.assertEqual(cur.fetchone.call_count, 1)
+        self.assertEqual(scraper.call_count, 1)
+        self.assertEqual(self.x._updateYearTables.call_count, 1)
+        self.assertEqual(self.x._updateDateTables.call_count, 1)
+        self.assertEqual(self.x._updateDayTables.call_count, 1)
+
 
 # class UpdateData(unittest.TestCase):
 #

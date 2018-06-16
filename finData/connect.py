@@ -5,33 +5,26 @@ import datetime as dt
 import pandas as pd
 import finData.scrape as fDs
 
-# TODO refactor
-# TODO bessere tests
-# TODO update data tests
-
 # # ./helper.sh start server
 # # load conector
 # x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
 #
-# x._customSQL("SELECT * FROM testdb.marktk WHERE year > 2016", fetch=True)
-# res = x._customSQL("SELECT MAX(datum) FROM testdb.hist WHERE stock_id = 1", fetch=True)
-# res = x._customSQL("SELECT * FROM testdb.hist WHERE stock_id = 1 AND datum = ( SELECT MAX(datum) FROM testdb.hist WHERE stock_id = 1 )", fetch=True)
-# res
-#
-#
-# x._customSQL(("""INSERT INTO testdb.marktk (stock_id,year,zahl_aktien,marktkapita)"""
-#              """ VALUES (1, 9999, NULL,0.99)"""))
-# x._customSQL("""DELETE FROM testdb.marktk WHERE year = 9999""")
-# x._customSQL("""DELETE FROM testdb.marktk WHERE year = 2017""")
-#
+# # test adding 2018 hist data
+# res = x._customSQL("SELECT * FROM testdb.hist WHERE EXTRACT(year FROM datum) = 2018 AND stock_id = 1", fetch=True)
+# x._customSQL("""DELETE FROM testdb.hist WHERE EXTRACT(year FROM datum) = 2018 AND stock_id = 1""")
 # df = x.updateData()
-# row = df.loc[[d.year == 2011 for d in df['datum']]]
-# row = row.where((pd.notnull(row)), None)
-# records = row.to_dict(orient='records')[0]
 #
-# ids = x.updateData()
-# today = dt.datetime.now().date()
-# today.day
+# # test adding 2017 marktk data
+# year_tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk']
+# res = x._customSQL("SELECT * FROM testdb.marktk WHERE year = 2017 AND stock_id = 1", fetch=True)
+# for tab in year_tables:
+#         x._customSQL("DELETE FROM testdb.{tab} WHERE year = 2017 AND stock_id = 1".format(tab=tab))
+# df = x.updateData()
+#
+# # test adding 2017 divid data
+# res = x._customSQL("SELECT * FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1", fetch=True)
+# x._customSQL("DELETE FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1")
+# df = x.updateData()
 
 
 class Connector(object):
@@ -66,36 +59,23 @@ class Connector(object):
         self.port = int(port)
         self.password = str(password)
         self.insert_statements = Connector._prepareInsertStatements()
+        self.minimum_date = Connector.todayMinusUpdateLimit()
         self.conn = self._connect()
 
     def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
         """Insert stock symbol into stocks table if not already exists"""
-        with self.conn as con:
-
-            # check out if stock exists
-            with con.cursor() as cur:
-                cur.execute("""SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s""",
-                            {'schema': AsIs(self.schema_name), 'isin': isin})
-                res = cur.fetchall()
-
-            # set id if it exists already
-            if len(res) > 0:
+        res = self.stockIdFromISIN(isin)
+        if len(res) > 0:
+            with self.conn as con:
                 print('{name} (isin: {isin}) not inserted, it already exists'
                       .format(name=name, isin=isin))
-                self.stock_id = res[0][0]
-
-            # insert and get id if it didnt exist
-            else:
-                with con.cursor() as cur:
-                    cur.execute(
-                        """INSERT INTO %(schema)s.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""",
-                        {'schema': AsIs(self.schema_name), 'name': name, 'isin': isin, 'wkn': wkn, 'typ': typ, 'currency': currency, 'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
-                    )
-                    cur.execute("""SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s""",
-                                {'schema': AsIs(self.schema_name), 'isin': isin})
-                    res = cur.fetchall()
-                print('{name} (isin: {isin}) inserted'.format(name=name, isin=isin))
-                self.stock_id = res[0][0]
+                self.stock_id = res[0]
+        else:
+            self._unsaveInsertStock(name, isin, wkn, typ, currency,
+                                    boerse_name, avan_ticker)
+            res = self.stockIdFromISIN(isin)
+            print('{name} (isin: {isin}) inserted'.format(name=name, isin=isin))
+            self.stock_id = res[0]
 
     def updateData(self):
         """Bring data for each stock symbol in database up to todays date"""
@@ -106,7 +86,7 @@ class Connector(object):
                 stockIds = cur.fetchall()
 
         # TODO: reduce while trying out
-        stockIds = stockIds[:1]
+        stockIds = stockIds[:2]
 
         n = len(stockIds)
         for i in range(n):
@@ -115,6 +95,15 @@ class Connector(object):
             self._updateSingleStock(stockIds[i][0])
             print("...done")
         return True
+
+    def stockIdFromISIN(self, isin):
+        """Get database primary key for stock from ISIN"""
+        query = """SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s"""
+        args = {'schema': AsIs(self.schema_name), 'isin': isin}
+        with self.conn as con:
+            with con.cursor() as cur:
+                cur.execute(query, args)
+                return cur.fetchone()
 
     def _updateSingleStock(self, stockId):
         """Bring data for a single stock symbol up to todays date"""
@@ -136,86 +125,68 @@ class Connector(object):
                             currency=stockInfo['currency'], wkn=stockInfo['wkn'],
                             boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
                             avan_ticker=stockInfo['avan_ticker'])
-        # self._updateYearTables(stock, stockId)
-        # self._updateDateTables(stock, stockId)
+        self._updateYearTables(stock, stockId)
+        self._updateDateTables(stock, stockId)
         self._updateDayTables(stock, stockId)
 
     def _updateDayTables(self, stock, stockId):
         """Bring tables with dayly entries up to todays date for a single stock symbol"""
-
         today = dt.date.today()
-        aveDaysPerYear = 365.24
-        minimumDay = today - dt.timedelta(days=Connector.update_limit * aveDaysPerYear)
-
         dates = self._getLastEnteredTimepoints('datum', stockId, Connector.day_tables)
-        lastEnteredDay = max(x for x in dates + [minimumDay] if x is not None)
-
+        lastEnteredDay = max(x for x in dates + [self.minimum_date] if x is not None)
         nMissingDays = today - lastEnteredDay
         missingDays = [today - dt.timedelta(days=x) for x in range(1, nMissingDays.days)]
-
         if len(missingDays) > 0:
             if len(missingDays) > 100:
                 stock.getHistoricPrices(onlyLast100=False)
             else:
                 stock.getHistoricPrices(onlyLast100=True)
-            for tab in Connector.day_tables:
-                try:
-                    df = stock.get(tab)
-                except ValueError:
-                    print(("""Scaper didn't return Table {tab}... """
-                           """continuing without it""").format(tab=tab))
-                else:
-                    for day in missingDays:
-                        row = df.loc[[d == day for d in df['datum']]]
-                        self._insertRow(row, stockId, tab)
+            self._updateTables(stock, stockId, 'day', missingDays)
 
     def _updateDateTables(self, stock, stockId):
         """Bring tables with yearly entries based on a single date up to todays date for a single stock symbol"""
-
-        thisYear = dt.date.today().year
-        minimumYear = thisYear - Connector.update_limit
-
         dates = self._getLastEnteredTimepoints('datum', stockId, Connector.date_tables)
-
-        years = [d.year for d in dates] + [minimumYear]
+        years = [d.year for d in dates] + [self.minimum_date.year]
         lastEnteredYear = max(x for x in years if x is not None)
-        missingYears = list(range(lastEnteredYear + 1, thisYear + 1))
-
+        missingYears = list(range(lastEnteredYear + 1, dt.date.today().year + 1))
         if len(missingYears) > 0:
             stock.getDividendTable()
-            for tab in Connector.date_tables:
-                try:
-                    df = stock.get(tab)
-                except ValueError:
-                    print(("""Scaper didn't return Table {tab}... """
-                           """continuing without it""").format(tab=tab))
-                else:
-                    for year in missingYears:
-                        row = df.loc[[d.year == year for d in df['datum']]]
-                        self._insertRow(row, stockId, tab)
+            self._updateTables(stock, stockId, 'date', missingYears)
 
     def _updateYearTables(self, stock, stockId):
         """Bring tables with yearly entries up to todays date for a single stock symbol"""
-        thisYear = dt.date.today().year
-        minimumYear = thisYear - Connector.update_limit
-
         years = self._getLastEnteredTimepoints('year', stockId, Connector.year_tables)
-
-        highestYear = max(x for x in years + [minimumYear] if x is not None)
-        missingYears = list(range(highestYear + 1, thisYear + 1))
-
+        highestYear = max(x for x in years + [self.minimum_date.year] if x is not None)
+        missingYears = list(range(highestYear + 1, dt.date.today().year + 1))
         if len(missingYears) > 0:
             stock.getFundamentalTables()
-            for tab in Connector.year_tables:
-                try:
-                    df = stock.get(tab)
-                except ValueError:
-                    print(("""Scaper didn't return Table {tab}... """
-                           """continuing without it""").format(tab=tab))
-                else:
-                    for year in missingYears:
-                        row = df.loc[df['year'] == year]
-                        self._insertRow(row, stockId, tab)
+            self._updateTables(stock, stockId, 'year', missingYears)
+
+    def _updateTables(self, stock, stockId, tableType, timepoints):
+        """Update all relevant tables for each missing time point"""
+        tableTypes = ['day', 'date', 'year']
+        if tableType not in tableTypes:
+            raise ValueError('tableType must be one of {types}'.format(types=tableTypes))
+        tables = {
+            'day': Connector.day_tables,
+            'year': Connector.year_tables,
+            'date': Connector.date_tables
+        }
+        for tab in tables[tableType]:
+            try:
+                df = stock.get(tab)
+            except ValueError:
+                print(("""Scaper didn't return Table {tab}... """
+                       """continuing without it""").format(tab=tab))
+            else:
+                for tp in timepoints:
+                    if tableType == 'day':
+                        row = df.loc[[d == tp for d in df['datum']]]
+                    if tableType == 'year':
+                        row = df.loc[df['year'] == tp]
+                    if tableType == 'date':
+                        row = df.loc[[d.year == tp for d in df['datum']]]
+                    self._insertRow(row, stockId, tab)
 
     def _getLastEnteredTimepoints(self, colname, stockId, tables):
         """Get last entered timepoint for a list of tables and a stock"""
@@ -229,6 +200,17 @@ class Connector(object):
                     cur.execute(query, args)
                     lastEnteredTimepoints.append(cur.fetchone()[0])
         return lastEnteredTimepoints
+
+    def _unsaveInsertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
+        """Insert stock without checking whether it already exists"""
+        query = ("""INSERT INTO %(schema)s.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
+                 """VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""")
+        args = {'schema': AsIs(self.schema_name), 'name': name, 'isin': isin,
+                'wkn': wkn, 'typ': typ, 'currency': currency,
+                'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
+        with self.conn as con:
+            with con.cursor() as cur:
+                cur.execute(query, args)
 
     def _insertRow(self, row, stockId, table):
         """Save row insert"""
@@ -260,6 +242,10 @@ class Connector(object):
         else:
             return pg.connect(dbname=self.db_name, user=self.user,
                               host=self.host, port=self.port, password=self.password)
+
+    @classmethod
+    def todayMinusUpdateLimit(cls):
+        return dt.date.today() - dt.timedelta(days=cls.update_limit * 365.24)
 
     @classmethod
     def _prepareInsertStatements(cls):
