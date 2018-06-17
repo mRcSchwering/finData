@@ -4,6 +4,7 @@ import psycopg2 as pg
 import datetime as dt
 import pandas as pd
 import finData.scrape as fDs
+import argparse
 
 # # ./helper.sh start server
 # # load conector
@@ -25,6 +26,9 @@ import finData.scrape as fDs
 # res = x._customSQL("SELECT * FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1", fetch=True)
 # x._customSQL("DELETE FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1")
 # df = x.updateData()
+
+# traded currencies
+currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR', 'CNY', 'JPY', 'KRW', 'RUB']
 
 
 class Connector(object):
@@ -86,14 +90,15 @@ class Connector(object):
                 stockIds = cur.fetchall()
 
         # TODO: reduce while trying out
-        stockIds = stockIds[:2]
+        stockIds = stockIds[:3]
 
         n = len(stockIds)
         for i in range(n):
-            print("[{i}/{n}] Updating {name} ({isin})..."
-                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]))
-            self._updateSingleStock(stockIds[i][0])
-            print("...done")
+            print("\n[{i}/{n}]\tUpdating {name} ({isin})..."
+                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]),
+                  end='')
+            self.updateSingleStock(stockIds[i][0])
+        print("\n...done")
         return True
 
     def stockIdFromISIN(self, isin):
@@ -105,7 +110,7 @@ class Connector(object):
                 cur.execute(query, args)
                 return cur.fetchone()
 
-    def _updateSingleStock(self, stockId):
+    def updateSingleStock(self, stockId):
         """Bring data for a single stock symbol up to todays date"""
         with self.conn as con:
             with con.cursor() as cur:
@@ -125,11 +130,11 @@ class Connector(object):
                             currency=stockInfo['currency'], wkn=stockInfo['wkn'],
                             boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
                             avan_ticker=stockInfo['avan_ticker'])
-        self._updateYearTables(stock, stockId)
-        self._updateDateTables(stock, stockId)
-        self._updateDayTables(stock, stockId)
+        self.updateYearTables(stock, stockId)
+        self.updateDateTables(stock, stockId)
+        self.updateDayTables(stock, stockId)
 
-    def _updateDayTables(self, stock, stockId):
+    def updateDayTables(self, stock, stockId):
         """Bring tables with dayly entries up to todays date for a single stock symbol"""
         today = dt.date.today()
         dates = self._getLastEnteredTimepoints('datum', stockId, Connector.day_tables)
@@ -137,27 +142,30 @@ class Connector(object):
         nMissingDays = today - lastEnteredDay
         missingDays = [today - dt.timedelta(days=x) for x in range(1, nMissingDays.days)]
         if len(missingDays) > 0:
+            print('{n} missing days...'.format(n=len(missingDays)), end='')
             if len(missingDays) > 100:
                 stock.getHistoricPrices(onlyLast100=False)
             else:
                 stock.getHistoricPrices(onlyLast100=True)
             self._updateTables(stock, stockId, 'day', missingDays)
 
-    def _updateDateTables(self, stock, stockId):
+    def updateDateTables(self, stock, stockId):
         """Bring tables with yearly entries based on a single date up to todays date for a single stock symbol"""
         dates = self._getLastEnteredTimepoints('datum', stockId, Connector.date_tables)
         years = [d.year for d in dates] + [self.minimum_date.year]
         lastEnteredYear = max(x for x in years if x is not None)
         missingYears = list(range(lastEnteredYear + 1, dt.date.today().year + 1))
+        print('{n} missing dates...'.format(n=len(missingYears)), end='')
         if len(missingYears) > 0:
             stock.getDividendTable()
             self._updateTables(stock, stockId, 'date', missingYears)
 
-    def _updateYearTables(self, stock, stockId):
+    def updateYearTables(self, stock, stockId):
         """Bring tables with yearly entries up to todays date for a single stock symbol"""
         years = self._getLastEnteredTimepoints('year', stockId, Connector.year_tables)
         highestYear = max(x for x in years + [self.minimum_date.year] if x is not None)
         missingYears = list(range(highestYear + 1, dt.date.today().year + 1))
+        print('{n} missing years...'.format(n=len(missingYears)), end='')
         if len(missingYears) > 0:
             stock.getFundamentalTables()
             self._updateTables(stock, stockId, 'year', missingYears)
@@ -176,7 +184,7 @@ class Connector(object):
             try:
                 df = stock.get(tab)
             except ValueError:
-                print(("""Scaper didn't return Table {tab}... """
+                print(("""\nScaper didn't return Table {tab}... """
                        """continuing without it""").format(tab=tab))
             else:
                 for tp in timepoints:
@@ -257,3 +265,47 @@ class Connector(object):
             sts[tab] = """INSERT INTO {loc} ({cols}) VALUES ({vals})""" \
                        .format(cols=cols, vals=vals, loc=loc)
         return sts
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='INSERTing and SELECTing methods', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers()
+
+    def fun_insert(args):
+        connector = Connector(args.db_name, args.db_schema, args.user,
+                              args.host, args.port, args.password)
+        connector.insertStock(args.name, args.ISIN, args.WKN, args.currency,
+                              args.boerse_name, args.avan_ticker)
+
+    def fun_update(args):
+        print('updating')
+        connector = Connector(args.db_name, args.db_schema, args.user,
+                              args.host, args.port, args.password)
+        connector.updateData()
+
+    # main parser for connection
+    parser.add_argument('--schema', dest='db_schema', type=str, help='schema name', required=True)
+    parser.add_argument('--db', dest='db_name', type=str, help='database name', default='findata')
+    parser.add_argument('--user', dest='user', type=str, help='user name', default='postgres')
+    parser.add_argument('--pass', dest='password', type=str, default='', help='user password if any')
+    parser.add_argument('--port', dest='port', type=int, help='port', default=5432)
+    parser.add_argument('--host', dest='host', type=str, help='host', default='server')
+
+    # insert stock subparser
+    parser_insert = subparsers.add_parser('insert', help='Insert new stock symbol into database')
+    parser_insert.add_argument('name', type=str, help='stock name')
+    parser_insert.add_argument('ISIN', type=str, help='ISIN of stock')
+    parser_insert.add_argument('WKN', type=str, help='WKN of stock')
+    parser_insert.add_argument('currency', type=str, choices=currencies, help='traded currency')
+    parser_insert.add_argument('boerse_name', type=str, help='Name used by boerse.de to request data for this stock')
+    parser_insert.add_argument('avan_ticker', type=str, help='Ticker as used by alphavantage API')
+    parser_insert.add_argument('--type', dest='type', type=str, help='Currently unused', default='Aktie')
+    parser_insert.set_defaults(func=fun_insert)
+
+    # update data subparser
+    parser_update = subparsers.add_parser('update', help='Update all tables for each stock in database')
+    parser_update.set_defaults(func=fun_update)
+
+    # run commands
+    args = parser.parse_args()
+    args.func(args)
