@@ -60,13 +60,14 @@ def getCursor(x):
 
 # helper for silencing
 class catchStdout:
-        def __enter__(self):
-            capture = io.StringIO()
-            sys.stdout = capture
-            return capture
 
-        def __exit__(self, type, value, traceback):
-            sys.stdout = sys.__stdout__
+    def __enter__(self):
+        capture = io.StringIO()
+        sys.stdout = capture
+        return capture
+
+    def __exit__(self, type, value, traceback):
+        sys.stdout = sys.__stdout__
 
 
 class ConnectorSetUp(unittest.TestCase):

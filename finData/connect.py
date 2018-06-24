@@ -69,7 +69,7 @@ class Connector(object):
     def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
         """Insert stock symbol into stocks table if not already exists"""
         res = self.stockIdFromISIN(isin)
-        if len(res) > 0:
+        if res is not None and len(res) > 0:
             with self.conn as con:
                 print('{name} (isin: {isin}) not inserted, it already exists'
                       .format(name=name, isin=isin))
@@ -88,17 +88,12 @@ class Connector(object):
                 cur.execute("""SELECT id, name, isin FROM %(schema)s.stock""",
                             {'schema': AsIs(self.schema_name)})
                 stockIds = cur.fetchall()
-
-        # TODO: reduce while trying out
-        stockIds = stockIds[:3]
-
         n = len(stockIds)
         for i in range(n):
             print("\n[{i}/{n}]\tUpdating {name} ({isin})..."
-                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]),
-                  end='')
+                  .format(i=i+1, n=n, name=stockIds[i][1], isin=stockIds[i][2]))
             self.updateSingleStock(stockIds[i][0])
-        print("\n...done")
+        print("...done")
         return True
 
     def stockIdFromISIN(self, isin):
@@ -141,8 +136,9 @@ class Connector(object):
         lastEnteredDay = max(x for x in dates + [self.minimum_date] if x is not None)
         nMissingDays = today - lastEnteredDay
         missingDays = [today - dt.timedelta(days=x) for x in range(1, nMissingDays.days)]
+        Connector.printMissingTimepoints(missingDays, 'days')
         if len(missingDays) > 0:
-            print('{n} missing days...'.format(n=len(missingDays)), end='')
+            #print('\t{n} missing days...'.format(n=len(missingDays)))
             if len(missingDays) > 100:
                 stock.getHistoricPrices(onlyLast100=False)
             else:
@@ -155,7 +151,7 @@ class Connector(object):
         years = [d.year for d in dates] + [self.minimum_date.year]
         lastEnteredYear = max(x for x in years if x is not None)
         missingYears = list(range(lastEnteredYear + 1, dt.date.today().year + 1))
-        print('{n} missing dates...'.format(n=len(missingYears)), end='')
+        Connector.printMissingTimepoints(missingYears, 'years')
         if len(missingYears) > 0:
             stock.getDividendTable()
             self._updateTables(stock, stockId, 'date', missingYears)
@@ -165,7 +161,8 @@ class Connector(object):
         years = self._getLastEnteredTimepoints('year', stockId, Connector.year_tables)
         highestYear = max(x for x in years + [self.minimum_date.year] if x is not None)
         missingYears = list(range(highestYear + 1, dt.date.today().year + 1))
-        print('{n} missing years...'.format(n=len(missingYears)), end='')
+        Connector.printMissingTimepoints(missingYears, 'years')
+        #print('\t{n} missing years...'.format(n=len(missingYears)))
         if len(missingYears) > 0:
             stock.getFundamentalTables()
             self._updateTables(stock, stockId, 'year', missingYears)
@@ -207,7 +204,7 @@ class Connector(object):
                             'schema': AsIs(self.schema_name), 'id': stockId}
                     cur.execute(query, args)
                     lastEnteredTimepoints.append(cur.fetchone()[0])
-        return lastEnteredTimepoints
+        return [x for x in lastEnteredTimepoints if x is not None]
 
     def _unsaveInsertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
         """Insert stock without checking whether it already exists"""
@@ -266,6 +263,16 @@ class Connector(object):
                        .format(cols=cols, vals=vals, loc=loc)
         return sts
 
+    @classmethod
+    def printMissingTimepoints(cls, tps, name):
+        details = ', '.join(str(x) for x in tps[:5])
+        if len(tps) > 5:
+            details = details + '...'
+        if len(tps) > 0:
+            details = '(' + details + ')'
+        print('\t{n} missing {s}{d}...'
+              .format(n=len(tps), s=name, d=details))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='INSERTing and SELECTing methods', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -274,8 +281,8 @@ if __name__ == "__main__":
     def fun_insert(args):
         connector = Connector(args.db_name, args.db_schema, args.user,
                               args.host, args.port, args.password)
-        connector.insertStock(args.name, args.ISIN, args.WKN, args.currency,
-                              args.boerse_name, args.avan_ticker)
+        connector.insertStock(args.name, args.ISIN, args.WKN, args.type,
+                              args.currency, args.boerse_name, args.avan_ticker)
 
     def fun_update(args):
         print('updating')
