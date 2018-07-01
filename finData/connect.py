@@ -137,7 +137,6 @@ class Connector(object):
         missingDays = [today - dt.timedelta(days=x) for x in range(1, nMissingDays.days)]
         Connector.printMissingTimepoints(missingDays, 'days')
         if len(missingDays) > 0:
-            #print('\t{n} missing days...'.format(n=len(missingDays)))
             if len(missingDays) > 100:
                 stock.getHistoricPrices(onlyLast100=False)
             else:
@@ -161,7 +160,6 @@ class Connector(object):
         highestYear = max(x for x in years + [self.minimum_date.year] if x is not None)
         missingYears = list(range(highestYear + 1, dt.date.today().year + 1))
         Connector.printMissingTimepoints(missingYears, 'years')
-        #print('\t{n} missing years...'.format(n=len(missingYears)))
         if len(missingYears) > 0:
             stock.getFundamentalTables()
             self._updateTables(stock, stockId, 'year', missingYears)

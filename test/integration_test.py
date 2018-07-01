@@ -5,15 +5,19 @@ import finData.connect as fDc
 import argparse
 import sys
 import io
+import re
 
 
+# used several times
 adidas = ['Adidas', 'DE000A1EWWW0', 'A1EWWW', 'Aktie', 'EUR', 'Adidas-Aktie', 'ADS.DE']
 
 
+# visually separating tests
 def _log(msg):
     print("\n\n" + msg + "\n" + "#" * 40 + "\n")
 
 
+# silencing
 class catchStdout:
 
     def __enter__(self):
@@ -25,9 +29,15 @@ class catchStdout:
         sys.stdout = sys.__stdout__
 
 
+# reduce updates
+class testConnect(fDc.Connector):
+
+    update_limit = 2
+
+
 def main(db_name, schema_name, user, host, port, password):
-    X = fDc.Connector(db_name=db_name, schema_name=schema_name,
-                      user=user, host=host, port=port, password=password)
+    X = testConnect(db_name=db_name, schema_name=schema_name,
+                    user=user, host=host, port=port, password=password)
 
     _log("Show databases have findata")
     res = X._customSQL("SELECT id FROM %s.stock" % schema_name, fetch=True)
@@ -59,6 +69,40 @@ def main(db_name, schema_name, user, host, port, password):
         _log("IntegrityError raised, NOT NULL constraint enforced")
     else:
         raise AssertionError("NOT NULL constraint was not enforced")
+
+    _log("Get Adidas stock id by ISIN")
+    stockId = X.stockIdFromISIN(adidas[1])[0]
+    res = X._customSQL("""SELECT isin FROM {schema}.stock WHERE id = {id}"""
+                       .format(schema=AsIs(schema_name), id=stockId), fetch=True)
+    assert adidas[1] == res[0][0]
+
+    _log("Update Data")
+    with catchStdout() as cap:
+        try:
+            X.updateData()
+            capture = cap
+        except:
+            _log("UpdateData failed:")
+            print(cap.getvalue())
+    # should be at least 40 days behind (for years can be below 2..)
+    days = re.findall('([0-9]+) missing days', capture.getvalue())
+    years = re.findall('([0-9]+) missing years', capture.getvalue())
+    assert 2 * len(days) == len(years)
+    assert len(days) == 7
+    assert [int(day) >= 40 for day in days] == [True] * len(days)
+
+    _log("Unnecessary data update")
+    with catchStdout() as cap:
+        X.updateData()
+        capture = cap
+    # now days and years should be lower because they were updated before
+    days = re.findall('([0-9]+) missing days', capture.getvalue())
+    years = re.findall('([0-9]+) missing years', capture.getvalue())
+    assert 2 * len(days) == len(years)
+    assert len(days) == 7
+    assert 2 * len(days) == len(years)
+    assert [int(day) <= 2 for day in days] == [True] * len(days)
+    assert [int(year) <= 1 for year in years] == [True] * len(years)
 
 
 if __name__ == "__main__":
