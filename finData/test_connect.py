@@ -134,11 +134,10 @@ class InsertNewStock(unittest.TestCase):
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_InsertedStockIsPrinted(self):
-        capture = io.StringIO()
-        sys.stdout = capture
-        with self.assertRaises(IndexError):
-            self.x.insertStock(*self.newStock)
-        sys.stdout = sys.__stdout__
+        with catchStdout() as cap:
+            with self.assertRaises(IndexError):
+                self.x.insertStock(*self.newStock)
+            capture = cap
         self.assertEqual(capture.getvalue(), 'n (isin: n) inserted\n')
 
     def test_correctCursorCalls(self):
@@ -167,10 +166,9 @@ class InsertExistingStock(unittest.TestCase):
         self.x = patchConnect(mockDBconnect(mockDB))
 
     def test_NotInsertedStockIsPrinted(self):
-        capture = io.StringIO()
-        sys.stdout = capture
-        self.x.insertStock(*self.stock)
-        sys.stdout = sys.__stdout__
+        with catchStdout() as cap:
+            self.x.insertStock(*self.stock)
+            capture = cap
         self.assertEqual(capture.getvalue(),
                          'n (isin: n) not inserted, it already exists\n')
 
@@ -410,10 +408,8 @@ class UpdateSingleStock(unittest.TestCase):
         self.x.updateDayTables = MagicMock()
         with patch('finData.scrape.Scraper.__init__') as scraper:
             scraper.return_value = None
-            capture = io.StringIO()
-            sys.stdout = capture
-            self.x.updateSingleStock(1)
-            sys.stdout = sys.__stdout__
+            with catchStdout() as cap:
+                    self.x.updateSingleStock(1)
         cur = getCursor(self.x)
         self.assertEqual(cur.execute.call_count, 1)
         self.assertEqual(cur.fetchone.call_count, 1)
