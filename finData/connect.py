@@ -70,7 +70,7 @@ class Connector(object):
         """Insert stock symbol into stocks table if not already exists"""
         res = self.stockIdFromISIN(isin)
         if res is not None and len(res) > 0:
-            with self.conn as con:
+            with self.conn as con:  # TODO not needed?
                 print('{name} (isin: {isin}) not inserted, it already exists'
                       .format(name=name, isin=isin))
                 self.stock_id = res[0]

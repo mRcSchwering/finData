@@ -1,60 +1,64 @@
 # This Python file uses the following encoding: utf-8
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
+import finData.connect as fDc
 import argparse
+import sys
+import io
 
 
-#schema_name = "testdb"
+adidas = ['Adidas', 'DE000A1EWWW0', 'A1EWWW', 'Aktie', 'EUR', 'Adidas-Aktie', 'ADS.DE']
 
 
 def _log(msg):
     print("\n\n" + msg + "\n" + "#" * 40 + "\n")
 
 
-# TODO: write as unittest
+class catchStdout:
+
+    def __enter__(self):
+        capture = io.StringIO()
+        sys.stdout = capture
+        return capture
+
+    def __exit__(self, type, value, traceback):
+        sys.stdout = sys.__stdout__
+
+
 def main(db_name, schema_name, user, host, port, password):
-    if password == "":
-        conn = pg.connect(dbname=db_name, user=user, host=host, port=port)
+    X = fDc.Connector(db_name=db_name, schema_name=schema_name,
+                      user=user, host=host, port=port, password=password)
+
+    _log("Show databases have findata")
+    res = X._customSQL("SELECT id FROM %s.stock" % schema_name, fetch=True)
+    assert len(res) == 7
+
+    _log("Unsafe insert stock douplicate")
+    try:
+        X._unsaveInsertStock(*adidas)
+    except pg.IntegrityError:
+        _log("IntegrityError raised, UNIQUE constraint enforced")
     else:
-        conn = pg.connect(dbname=db_name, user=user, host=host, port=port, password=password)
-    with conn:
+        raise AssertionError("UNIQUE constraint was not enforced")
 
-        _log("Show databases have findata")
-        with conn.cursor() as cur:
-            cur.execute("""SELECT datname FROM pg_database""")
-            res = cur.fetchall()
-            assert len([d[0] for d in res if d[0] == 'findata']) == 1
+    _log("Safe insert stock douplicate")
+    with catchStdout() as cap:
+        X.insertStock(*adidas)
+        capture = cap
+    expected = '{name} (isin: {isin}) not inserted, it already exists\n' \
+               .format(name=adidas[0], isin=adidas[1])
+    assert capture.getvalue() == expected
 
-        _log("All stock symbols were entered")
-        with conn.cursor() as cur:
-            cur.execute("""SELECT id FROM {schema}.stock"""
-                        .format(schema=AsIs(schema_name)))
-            res = cur.fetchall()
-            assert len(res) == 7
-
-        # _log("Insert stock douplicate")
-        # colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
-        # vals = """'Adidas','DE000A1EWWW0','A1EWWW','Aktie','EUR','Adidas-Aktie','ADS.DE'"""
-        # with conn.cursor() as cur:
-        #     try:
-        #         cur.execute("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
-        #                     .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
-        #     except pg.IntegrityError:
-        #         _log("IntegrityError raised, UNIQUE constraint enforced")
-        #     else:
-        #         raise AssertionError("UNIQUE constraint was not enforced")
-
-        _log("Insert bad NULL into stock")
-        colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
-        vals = """'test',NULL,'test','test','test','test','test'"""
-        with conn.cursor() as cur:
-            try:
-                cur.execute("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
-                            .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
-            except pg.IntegrityError:
-                _log("IntegrityError raised, NOT NULL constraint enforced")
-            else:
-                raise AssertionError("NOT NULL constraint was not enforced")
+    _log("Insert bad NULL into stock")
+    colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
+    vals = """'test',NULL,'test','test','test','test','test'"""
+    try:
+        X._customSQL("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
+                     .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
+    except pg.IntegrityError:
+        _log("IntegrityError raised, NOT NULL constraint enforced")
+    else:
+        raise AssertionError("NOT NULL constraint was not enforced")
 
 
 if __name__ == "__main__":
