@@ -78,12 +78,9 @@ def main(db_name, schema_name, user, host, port, password):
 
     _log("Update Data")
     with catchStdout() as cap:
-        try:
-            X.updateData()
-            capture = cap
-        except:
-            _log("UpdateData failed:")
-            print(cap.getvalue())
+        X.updateData()
+        capture = cap
+    print(capture.getvalue())
     # should be at least 40 days behind (for years can be below 2..)
     days = re.findall('([0-9]+) missing days', capture.getvalue())
     years = re.findall('([0-9]+) missing years', capture.getvalue())
@@ -95,6 +92,7 @@ def main(db_name, schema_name, user, host, port, password):
     with catchStdout() as cap:
         X.updateData()
         capture = cap
+    print(capture.getvalue())
     # now days and years should be lower because they were updated before
     days = re.findall('([0-9]+) missing days', capture.getvalue())
     years = re.findall('([0-9]+) missing years', capture.getvalue())
