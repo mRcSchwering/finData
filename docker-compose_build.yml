@@ -14,5 +14,7 @@ services:
 
   app:
     image: mrcschwering/cci-findata_build:latest
+    environment:
+        - ALPHAVANTAGE_API_KEY
     depends_on:
         - server

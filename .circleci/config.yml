@@ -65,6 +65,7 @@ jobs:
           name: Run Integration Tests
           command: |
             docker-compose -f 'docker-compose_build.yml' \
+              -e ALPHAVANTAGE_API_KEY="$ALPHAVANTAGE_API_KEY"
               run app test.integration_test \
               --db findata \
               --schema testdb \
