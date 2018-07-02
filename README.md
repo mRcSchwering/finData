@@ -23,6 +23,18 @@ Use:
 - `helper.sh drop <testSchemaName>` to drop a test schema in database (on host)
 - `helper.sh integration` docker compose up, run integration tests, docker compose down (DB in memory)
 
+# Cleaning Up
+
+Cleaning up all the docker images, volumes and whatnot every now and then.
+
+```
+sudo docker volume ls
+sudo docker volume prune
+sudo docker images -a
+sudo docker images | grep "^<none>" | awk '{print $3}'
+sudo docker rmi $(sudo docker images | grep "^<none>" | awk '{print $3}')
+```
+
 # docker-compose
 
 Service _app_ has the actual `findata` app, _server_ is the postgres server,
