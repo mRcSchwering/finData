@@ -7,6 +7,19 @@ import re
 import json
 import requests
 
+# TODO class for schemas
+# that reads schema and understands table structure
+# could distinguish date and daily by different naming
+# then use schema class instead of defining tables here
+# kann ich auch erst mal hard coden, aber dann ist es wenigstens an einem Ort
+
+# TODO data should be independent of source
+# define possibilities to scrape and get this data here
+# this should go in line with the schema class
+# so define schema -> data needed is extracted
+# then scraper will only provide methods for getting the needed data
+# könnte auf subklassen mit börse scraper, alpha scraper usw hinauslaufen
+
 
 class Scraper(object):
     """Data scraping from boerse.de and requesting from alphavantage.co"""

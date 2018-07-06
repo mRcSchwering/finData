@@ -6,26 +6,17 @@ import pandas as pd
 import finData.scrape as fDs
 import argparse
 
-# # ./helper.sh start server
-# # load conector
-# x = Connector('findata', 'testdb', 'postgres', '127.0.0.1', 5432)
-#
-# # test adding 2018 hist data
-# res = x._customSQL("SELECT * FROM testdb.hist WHERE EXTRACT(year FROM datum) = 2018 AND stock_id = 1", fetch=True)
-# x._customSQL("""DELETE FROM testdb.hist WHERE EXTRACT(year FROM datum) = 2018 AND stock_id = 1""")
-# df = x.updateData()
-#
-# # test adding 2017 marktk data
-# year_tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk']
-# res = x._customSQL("SELECT * FROM testdb.marktk WHERE year = 2017 AND stock_id = 1", fetch=True)
-# for tab in year_tables:
-#         x._customSQL("DELETE FROM testdb.{tab} WHERE year = 2017 AND stock_id = 1".format(tab=tab))
-# df = x.updateData()
-#
-# # test adding 2017 divid data
-# res = x._customSQL("SELECT * FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1", fetch=True)
-# x._customSQL("DELETE FROM testdb.divid WHERE EXTRACT(year FROM datum) = 2017 AND stock_id = 1")
-# df = x.updateData()
+# TODO csv reader for adding stock
+# TODO interface sollte eigene Klasse sein, die Connector und Scraper benutzt
+# TODO logger for whole app (singleton)
+# TODO adaptor for scraper
+
+# TODO class for schemas
+# that reads schema and understands table structure
+# could distinguish date and daily by different naming
+# then use schema class instead of defining tables here
+# kann ich auch erst mal hard coden, aber dann ist es wenigstens an einem Ort
+
 
 # traded currencies
 currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR', 'CNY', 'JPY', 'KRW', 'RUB']
