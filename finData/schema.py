@@ -9,6 +9,7 @@
 # -> dann direkt die richtigen colnames nehmen
 # -> diese ganzen scheiß conversions werden überfrlüssig
 
+
 class SchemaInit(Schema):
 
     # name of the schema

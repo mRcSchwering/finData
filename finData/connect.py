@@ -6,16 +6,7 @@ import pandas as pd
 import finData.scrape as fDs
 import argparse
 
-# TODO csv reader for adding stock
-# TODO interface sollte eigene Klasse sein, die Connector und Scraper benutzt
-# TODO logger for whole app (singleton)
-# TODO adaptor for scraper
-
-# TODO class for schemas
-# that reads schema and understands table structure
-# could distinguish date and daily by different naming
-# then use schema class instead of defining tables here
-# kann ich auch erst mal hard coden, aber dann ist es wenigstens an einem Ort
+# TODO connector vllt in DB aktionen aufteilen zB Connector klasse (nur fürs connecten)
 
 
 # traded currencies

@@ -4,9 +4,12 @@ import argparse
 
 # TODO Schema Klasse, die schema Logik und constraints bereit stellt
 # TODO Facade für main module function programmieren
+# TODO csv reader adden für insert stock
 # TODO Connector sollte nur DB connection bereit stellen (high lvl logik in Facade)
+# TODO vllt besser db file mit connector usw Klassen
 # TODO Scraper sollte nicht in Connector sein
 # TODO unterhalb von Facade nur explizit Dependency Injection
+# TODO logger anstatt print
 
 
 class FindataFacade(object):
@@ -17,30 +20,82 @@ class FindataFacade(object):
     # update limit in years (going into the past from today)
     update_limit = 20
 
-    # tables with yearly or daily indices (and updates)
-    # or with a date index which represents the whole year
-    year_tables = ['guv', 'bilanz', 'kennza', 'rentab', 'person', 'marktk']
-    day_tables = ['hist']
-    date_tables = ['divid']
-
-    # column definitions as in DB schema
-    col_def = {
-        'guv': ['stock_id', 'year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena'],
-        'bilanz': ['stock_id', 'year', 'umlaufvermo', 'anlagevermo', 'sum_aktiva', 'kurzfr_verb', 'langfr_verb', 'gesamt_verb', 'eigenkapita', 'sum_passiva', 'eigen_quote', 'fremd_quote'],
-        'kennza': ['stock_id', 'year', 'gewinn_verw', 'gewinn_unvw', 'umsatz', 'buchwert', 'dividende', 'KGV', 'KBV', 'KUV'],
-        'rentab': ['stock_id', 'year', 'umsatzren', 'eigenkapren', 'geskapren', 'dividren'],
-        'person': ['stock_id', 'year', 'personal', 'aufwand', 'umsatz', 'gewinn'],
-        'marktk': ['stock_id', 'year', 'zahl_aktien', 'marktkapita'],
-        'divid': ['stock_id', 'datum', 'dividende', 'veraenderu', 'rendite'],
-        'hist': ['stock_id', 'datum', 'open', 'high', 'low', 'close', 'adj_close', 'volume', 'divid_amt', 'split_coef']
-    }
-
     def __init__(self, connector, scraper):
-        self._connector = connector
+        self._schema = schema
+        self._conn = connector
         self._scraper = scraper
+
+    def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
+        """
+        Insert stock symbol into stocks table if it doesnt already exist
+        """
+        res = self._conn.stockIdFromISIN(isin)
+        if res is not None and len(res) > 0:
+            print('{name} (isin: {isin}) not inserted, it already exists'
+                  .format(name=name, isin=isin))
+        else:
+            self._conn.insertStock(
+                name, isin, wkn, typ, currency, boerse_name, avan_ticker)
+            print('{name} (isin: {isin}) inserted'.format(name=name, isin=isin))
+
+    def updateData(self):
+        """
+        Bring data for each stock symbol in database up to todays date
+        """
+        # with self.conn as con:
+        #     with con.cursor() as cur:
+        #         cur.execute("""SELECT id, name, isin FROM %(schema)s.stock""",
+        #                     {'schema': AsIs(self.schema_name)})
+        #         stockIds = cur.fetchall()
+        # TODO aus auskommentierten oben, methoden unten machen
+        stocks = self._conn.getAllStockSymbols()
+        n = len(stocks)
+        for i in range(n):
+            stock = stocks[i]
+            print("\n[{i}/{n}]\tUpdating {name} ({isin})..."
+                  .format(i=i+1, n=n, name=stock[i][1], isin=stocks[i][2]))
+            self.updateSingleStock(stocks[i][0])
+        print("...done")
+        return True
+
+    def updateSingleStock(self, stockId):
+        """
+        Bring data for a single stock symbol up to todays date
+        """
+        # with self.conn as con:
+        #     with con.cursor() as cur:
+        #         cur.execute("""SELECT * FROM %(schema)s.stock WHERE id = %(id)s""",
+        #                     {'schema': AsIs(self.schema_name), 'id': stockId})
+        #         res = cur.fetchone()[1:]
+        # TODO vllt kann man die (oben) mit getAllStockSymbols() methode
+        # kombinieren (muss noch implementiert werden)
+        res = self._conn.getStockSymbol()
+        stockInfo = {
+            'name': res[0],
+            'isin': res[1],
+            'wkn': res[2],
+            'typ': res[3],
+            'currency': res[4],
+            'boerse_name': res[5],
+            'avan_ticker': res[6]
+        }
+        stock = fDs.Scraper(name=stockInfo['name'], isin=stockInfo['isin'],
+                            currency=stockInfo['currency'], wkn=stockInfo['wkn'],
+                            boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
+                            avan_ticker=stockInfo['avan_ticker'])
+        # TODO hier würde vermutlich eher ne liste an scrapern/requestern
+        # übergeben werden, da verschiedene optionen
+        # welche tabelle wo rein kommt entweder hier mit rein geben
+        # oder database.Connector kann das selber zB aus Schema raus lesen
+        self._conn.updateYearTables(self._scraper, stockId)
+        self._conn.updateDateTables(self._scraper, stockId)
+        self._conn.updateDayTables(self._scraper, stockId)
 
 
 if __name__ == "__main__":
+
+    # TODO die hier würden mit FindataFacade laufen
+
     parser = argparse.ArgumentParser(
         description='INSERTing and SELECTing methods',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -92,6 +147,8 @@ if __name__ == "__main__":
         '--type', dest='type', type=str, help='Currently unused',
         default='Aktie')
     parser_insert.set_defaults(func=fun_insert)
+
+    # TODO insert_csv parser
 
     # update data subparser
     parser_update = subparsers.add_parser(
