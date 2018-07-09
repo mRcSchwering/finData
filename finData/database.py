@@ -6,15 +6,15 @@ import pandas as pd
 import finData.scrape as fDs
 import argparse
 
-# TODO connector vllt in DB aktionen aufteilen zB Connector klasse (nur fürs connecten)
-
 
 # traded currencies
 currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR', 'CNY', 'JPY', 'KRW', 'RUB']
 
 
 class Connector(object):
-    """DB Connector for SELECTing and INSERTing data"""
+    """
+    DB Connector for selecting and inserting data
+    """
 
     # update limit in years (going into the past from today)
     update_limit = 20  # TODO sollte in main
@@ -196,18 +196,6 @@ class Connector(object):
     @classmethod
     def todayMinusUpdateLimit(cls):
         return dt.date.today() - dt.timedelta(days=cls.update_limit * 365.24)
-
-    # TODO die hier könnten aus Schema Klasse kommen (zumindest col_def)
-    @classmethod
-    def _prepareInsertStatements(cls):
-        sts = {}
-        for tab in cls.col_def:
-            cols = ','.join(cls.col_def[tab])
-            vals = ','.join(['%({v})s'.format(v=v) for v in cls.col_def[tab]])
-            loc = '%(schema_name)s.%(table_name)s'
-            sts[tab] = """INSERT INTO {loc} ({cols}) VALUES ({vals})""" \
-                       .format(cols=cols, vals=vals, loc=loc)
-        return sts
 
     @classmethod
     def printMissingTimepoints(cls, tps, name):
