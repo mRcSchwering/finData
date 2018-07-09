@@ -1,5 +1,4 @@
 # This Python file uses the following encoding: utf-8
-from psycopg2.extensions import AsIs
 from finData.dbconnector import DBConnector
 from unittest.mock import patch
 from unittest.mock import MagicMock
