@@ -21,7 +21,7 @@ class Connector(object):
 
     # TODO schema benutzen
 
-    def __init__(self, db_name, schema_name, user, host, port, password=""):
+    def __init__(self, db, schema, schema_name):
         self.schema_name = str(schema_name)
         self.db_name = str(db_name)
         self.user = str(user)
@@ -32,19 +32,6 @@ class Connector(object):
         self.minimum_date = Connector.todayMinusUpdateLimit()
         self.conn = self._connect()
         # TODO Liste von Scrapers/Requesters setzen (siehe unten)
-
-    # TODO vllt diesen hier ausbauen und wiederverwenden
-    def customSQL(self, statement, fetch=False):  # None, one, all
-        """
-        Execute psql statement as is and fetchall if needed
-        """
-        res = None
-        with self.conn as con:
-            with con.cursor() as cur:
-                cur.execute(statement)
-                if fetch:
-                    res = cur.fetchall()
-        return res
 
     # TODO stock Id vllt als attribut setzen (wird häufiger gebraucht, siehe unten)
 
