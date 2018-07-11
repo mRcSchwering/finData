@@ -2,9 +2,9 @@
 # see README.md for use
 
 PG_NAME="postgres_server"
-VOL_NAME="postgres_data"
-DB_NAME="findata"
-SCHEMA_NAME="testdb"
+VOL_NAME="findata_test"
+DB_NAME="findata_test"
+SCHEMA_NAME="findata_init2"
 
 # argument
 if [ $1 ]; then

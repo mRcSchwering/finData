@@ -1,10 +1,10 @@
-from finData.aschema import ASchema
+from finData.schema import Schema
 import unittest
 #import sys
 #import io
 
 
-class Schema(ASchema):
+class Schema(Schema):
 
     # name of the schema
     name = "findata_init"
@@ -68,7 +68,7 @@ class MissingStockSchema(Schema):
     }
 
 
-class ASchemaBehaviour(unittest.TestCase):
+class SchemaBehaviour(unittest.TestCase):
 
     def setUp(self):
         self.S = Schema()
