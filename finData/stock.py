@@ -3,6 +3,9 @@ from psycopg2.extensions import AsIs
 
 
 class Stock(object):
+    """
+    Checking if a stock exists and inserting a new stock
+    """
 
     _id = None
     name = None
@@ -20,19 +23,12 @@ class Stock(object):
         self.db = db
         self.schema = schema
 
-    def exists(self):
-        pass
-
-    def insert(self, name, typ, isin, wkn, currency, avan_ticker, boerse_name):
-        if currency not in self._currencies:
-            raise ValueError('currency must be one of %s' % self._currencies)
-        res = self._queryISIN(isin, name)
-        if res not None and len(res) > 0:
-            print('{name} (isin: {isin}) not inserted, it already exists'
-                  .format(name=name, isin=isin))
-        else:
-            res = self._insertNewStock(name, typ, isin, wkn,
-                                       currency, avan_ticker, boerse_name)
+    def exists(self, isin):
+        query = """SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s"""
+        args = {'schema': AsIs(self.schema.name), 'isin': isin}
+        res = self.db.query(query, args, fetch='one')
+        if res is None or len(res) < 1:
+            return False
         self._id = res[0]
         self.name = res[1]
         self.isin = res[2]
@@ -43,12 +39,29 @@ class Stock(object):
         self.avan_ticker = res[7]
         return True
 
-    def _queryISIN(self, isin, name):
-        query = """SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s"""
-        args = {'schema': AsIs(self.schema.name), 'isin': isin}
-        return self.db.query(query, args, fetch='one')
+    def insert(self, name, typ, isin, wkn, currency, avan_ticker, boerse_name):
+        infos = [name, typ, isin, wkn, currency, avan_ticker, boerse_name]
+        if currency not in self._currencies:
+            raise ValueError('currency must be one of %s' % self._currencies)
+        stock_exists = self.exists(isin)
+        if stock_exists:
+            print('{name} (isin: {isin}) not inserted, it already exists'
+                  .format(name=name, isin=isin))
+            return False
+        self._insertNewStock(*infos)
+        self.exists(isin)
+        return True
 
     def _insertNewStock(self, name, typ, isin, wkn, currency,
                         avan_ticker, boerse_name):
-        query = """INSERT INTO %{schema}s.stock () VALUES ()"""
+        """
+        Issue query to insert new stock
+        """
+        # TODO should these queries be in schema (-> stock also as Schema Table)
+        query = ("""INSERT INTO %(schema)s.stock """
+                 """(name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
+                 """VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""")
+        args = {'schema': AsIs(self.schema.name), 'name': name, 'isin': isin,
+                'wkn': wkn, 'typ': typ, 'currency': currency,
+                'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
         self.db.query(query, args)
