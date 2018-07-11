@@ -1,10 +1,8 @@
 from finData.schema import Schema
 import unittest
-#import sys
-#import io
 
 
-class Schema(Schema):
+class GoodSchema(Schema):
 
     # name of the schema
     name = "findata_init"
@@ -71,7 +69,7 @@ class MissingStockSchema(Schema):
 class SchemaBehaviour(unittest.TestCase):
 
     def setUp(self):
-        self.S = Schema()
+        self.S = GoodSchema()
 
     def test_nameAttr(self):
         self.assertEqual(self.S.name, 'findata_init')
@@ -99,7 +97,7 @@ class SchemaBehaviour(unittest.TestCase):
 class TableBehaviour(unittest.TestCase):
 
     def setUp(self):
-        self.T = Schema().table('hist')
+        self.T = GoodSchema().table('hist')
 
     def test_nameAttr(self):
         self.assertEqual(self.T.name, 'hist')
@@ -128,7 +126,7 @@ class TableBehaviour(unittest.TestCase):
 class StockTableBehaviour(unittest.TestCase):
 
     def setUp(self):
-        self.T = Schema().table('stock')
+        self.T = GoodSchema().table('stock')
 
     def test_nameAttr(self):
         self.assertEqual(self.T.name, 'stock')
@@ -156,7 +154,7 @@ class StockTableBehaviour(unittest.TestCase):
 class ColumnBehaviour(unittest.TestCase):
 
     def setUp(self):
-        self.C = Schema().table('hist').column('datum')
+        self.C = GoodSchema().table('hist').column('datum')
 
     def test_nameAttr(self):
         self.assertEqual(self.C.name, 'datum')
@@ -168,8 +166,8 @@ class ColumnBehaviour(unittest.TestCase):
 class StockColumnBehaviour(unittest.TestCase):
 
     def setUp(self):
-        self.C = Schema().table('stock').column('isin')
-        self.C2 = Schema().table('stock').column('id')
+        self.C = GoodSchema().table('stock').column('isin')
+        self.C2 = GoodSchema().table('stock').column('id')
 
     def test_nameAttr(self):
         self.assertEqual(self.C.name, 'isin')

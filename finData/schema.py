@@ -4,6 +4,13 @@
 # TODO yearly und daily könnten in table namen encoded werden
 # TODO constriants (zB currency) sollten in sql definiert sein
 
+from psycopg2.
+from finData.dbconnector import DBConnector
+
+db = DBConnector('findata_test', 'postgres', '127.0.0.1', 5432)
+schema = 'findata_init2'
+db.query("SELECT * FROM findata_init2.stock", {}, fetch='one')
+
 
 class Schema(object):
 
