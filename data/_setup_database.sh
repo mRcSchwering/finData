@@ -34,7 +34,7 @@ sudo docker run \
 #sudo apt-get update
 #sudo apt-get install postgresql-client
 createdb -h 127.0.0.1 -p 5432 "$DB_NAME" -U postgres
-
+#dropdb -h 127.0.0.1 -p 5432 "$DB_NAME" -U postgres
 
 # initialize schema using python3 psycopg2
 # this is form finData root directory

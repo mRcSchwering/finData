@@ -42,7 +42,7 @@ def schema_init2(schema_name, conn):
                   fremd_quote DECIMAL(5, 2), -- in percent
                   gewinn_verw DECIMAL(5,2),  -- je Aktie
                   gewinn_unvw DECIMAL(5,2),  -- je Aktie
-                  umsatz      DECIMAL(5,2),  -- je Aktie
+                  umsatz_a    DECIMAL(5,2),  -- je Aktie
                   buchwert    DECIMAL(5,2),  -- je Aktie
                   dividende   DECIMAL(5,2),  -- je Aktie
                   KGV         DECIMAL(5,2),  -- Kurs-Gewinn-Verh
@@ -53,9 +53,9 @@ def schema_init2(schema_name, conn):
                   geskapren   DECIMAL(5,2),  -- in percent
                   dividren    DECIMAL(5,2),  -- in percent
                   personal    INTEGER,       -- am Jahresende
-                  aufwand     FLOAT,         -- Personalaufwand in Mio
-                  umsatz      FLOAT,         -- je Mitarbeiter
-                  gewinn      FLOAT,         -- je Mitarbeiter
+                  pers_aufw   FLOAT,         -- Personalaufwand in Mio
+                  umsatz_m    FLOAT,         -- je Mitarbeiter
+                  gewinn_m    FLOAT,         -- je Mitarbeiter
                   zahl_aktien INTEGER,
                   marktkapita FLOAT   -- in Mio Euro
                 );
