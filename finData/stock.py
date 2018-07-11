@@ -24,6 +24,9 @@ class Stock(object):
         self.schema = schema
 
     def exists(self, isin):
+        """
+        Get stock information by ISIN if exists in stock table
+        """
         query = """SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s"""
         args = {'schema': AsIs(self.schema.name), 'isin': isin}
         res = self.db.query(query, args, fetch='one')
@@ -40,6 +43,9 @@ class Stock(object):
         return True
 
     def insert(self, name, typ, isin, wkn, currency, avan_ticker, boerse_name):
+        """
+        Insert new stock after checking whether it already exists
+        """
         infos = [name, typ, isin, wkn, currency, avan_ticker, boerse_name]
         if currency not in self._currencies:
             raise ValueError('currency must be one of %s' % self._currencies)

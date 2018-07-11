@@ -33,33 +33,6 @@ class Connector(object):
         self.conn = self._connect()
         # TODO Liste von Scrapers/Requesters setzen (siehe unten)
 
-    # TODO stock Id vllt als attribut setzen (wird häufiger gebraucht, siehe unten)
-
-    def stockIdFromISIN(self, isin):
-        """
-        Get database primary key for stock from ISIN
-        """
-        query = """SELECT id FROM %(schema)s.stock WHERE isin = %(isin)s"""
-        args = {'schema': AsIs(self.schema_name), 'isin': isin}
-        with self.conn as con:
-            with con.cursor() as cur:
-                cur.execute(query, args)
-                res = cur.fetchone()
-        return res
-
-    def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
-        """
-        Insert stock without checking whether it already exists
-        """
-        query = ("""INSERT INTO %(schema)s.stock (name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
-                 """VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""")
-        args = {'schema': AsIs(self.schema_name), 'name': name, 'isin': isin,
-                'wkn': wkn, 'typ': typ, 'currency': currency,
-                'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
-        with self.conn as con:
-            with con.cursor() as cur:
-                cur.execute(query, args)
-
     # TODO identify from Schema class which table needs to be updated
     # also I would provide a list of scrapers/requesters (3 defs below)
 

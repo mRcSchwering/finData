@@ -9,7 +9,11 @@ from finData.aschema import ASchema
 class Schema(ASchema):
 
     # name of the schema
-    name = "findata_init"
+    name = 'findata_init'
+
+    # special treatment, None update rate, str expect for id, no conversion
+    # also the id column will be excluded from insert statement
+    stock_table = 'stock'
 
     # tables which are updated daily, the rest is considered yearly
     daily_updates = ['hist']
@@ -20,6 +24,7 @@ class Schema(ASchema):
 
     # column definitions as in DB schema
     tables = {
+        'stock': ['id', 'name', 'typ', 'isin', 'wkn', 'currency', 'avan_ticker', 'boerse_name'],
         'guv': ['stock_id', 'year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena'],
         'bilanz': ['stock_id', 'year', 'umlaufvermo', 'anlagevermo', 'sum_aktiva', 'kurzfr_verb', 'langfr_verb', 'gesamt_verb', 'eigenkapita', 'sum_passiva', 'eigen_quote', 'fremd_quote'],
         'kennza': ['stock_id', 'year', 'gewinn_verw', 'gewinn_unvw', 'umsatz', 'buchwert', 'dividende', 'KGV', 'KBV', 'KUV'],
@@ -32,6 +37,7 @@ class Schema(ASchema):
 
     # from scraper table id to name as in DB schema for each table
     conversions = {
+        'stock': [],
         'guv': [
             {'id': 'Umsatz', 'name': 'umsatz'},
             {'id': 'Bruttoergebnis', 'name': 'bruttoergeb'},
