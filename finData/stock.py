@@ -54,20 +54,9 @@ class Stock(object):
             print('{name} (isin: {isin}) not inserted, it already exists'
                   .format(name=name, isin=isin))
             return False
-        self._insertNewStock(*infos)
-        self.exists(isin)
-        return True
-
-    def _insertNewStock(self, name, typ, isin, wkn, currency,
-                        avan_ticker, boerse_name):
-        """
-        Issue query to insert new stock
-        """
-        # TODO should these queries be in schema (-> stock also as Schema Table)
-        query = ("""INSERT INTO %(schema)s.stock """
-                 """(name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
-                 """VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)""")
         args = {'schema': AsIs(self.schema.name), 'name': name, 'isin': isin,
                 'wkn': wkn, 'typ': typ, 'currency': currency,
                 'boerse_name': boerse_name, 'avan_ticker': avan_ticker}
-        self.db.query(query, args)
+        self.db.query(self.schema.table('stock').insert_statement, args)
+        self.exists(isin)
+        return True

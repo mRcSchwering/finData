@@ -6,6 +6,14 @@ import pandas as pd
 import finData.scrape as fDs
 import argparse
 
+# TODO schema abändern, sodass 3 tabellen entsprehcend dem scraper
+# TODO dann zeit columns immer angeben -> year, datum usw
+# TODO und yearly, daily oder so als namenskonvention
+# TODO dann kann fast alles aus dem schema gelesen werden
+# TODO stock table kriegt vermutlich immer noch speziellen Platz
+
+# TODO ASchema sollte Schema sein und Schema sollte Schema_init sein
+# wird nur einmal verwenden 'schema = Schema_init' in Facade
 
 # traded currencies
 currencies = ['EUR', 'CHF', 'USD', 'TWD', 'SGD', 'INR', 'CNY', 'JPY', 'KRW', 'RUB']
@@ -35,6 +43,11 @@ class Connector(object):
 
     # TODO identify from Schema class which table needs to be updated
     # also I would provide a list of scrapers/requesters (3 defs below)
+
+    # TODO da schema -> table 1. update rate und 2. date column kennt,
+    # kann es selber herausfinden, wie die update rate ist
+    # andererseits ist es sinnvoll durch diese 3 Gruppen von Tabellen
+    # update zu machen, da das dem scraper entspricht
 
     def updateDayTables(self, stock, stockId):
         """
@@ -141,18 +154,9 @@ class Connector(object):
                 with con.cursor() as cur:
                     cur.execute(self.insert_statements[table], records)
 
-    def _connect(self):
-        """
-        Return mere DB connection
-        """
-        if self.password == "":
-            return pg.connect(dbname=self.db_name, user=self.user,
-                              host=self.host, port=self.port)
-        else:
-            return pg.connect(dbname=self.db_name, user=self.user,
-                              host=self.host, port=self.port, password=self.password)
-
     # TODO cls.update_limit sollte in main angegeben werden
+    # da schema Update rate beinhaltet sollte in schema auch die query zum
+    # last update definiert werden (schema -> table)
     @classmethod
     def todayMinusUpdateLimit(cls):
         return dt.date.today() - dt.timedelta(days=cls.update_limit * 365.24)

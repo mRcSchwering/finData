@@ -8,8 +8,15 @@ import io
 
 db = MagicMock()
 
+table = MagicMock()
+table.insert_statement = (
+    """INSERT INTO %(schema)s.stock """
+    """(name,isin,wkn,typ,currency,boerse_name,avan_ticker) """
+    """VALUES (%(name)s,%(isin)s,%(wkn)s,%(typ)s,%(currency)s,%(boerse_name)s,%(avan_ticker)s)"""
+)
 schema = MagicMock()
 schema.name = 'schema_name'
+schema.table = MagicMock(return_value=table)
 
 
 # helper for silencing
