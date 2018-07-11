@@ -1,5 +1,5 @@
 # This Python file uses the following encoding: utf-8
-from data.schemata.schema_init import schema_init as schema  # the current schema
+from data.schemata.schema_init2 import schema_init2 as schema
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
 import argparse

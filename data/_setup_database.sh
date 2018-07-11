@@ -3,10 +3,10 @@
 # from finData root directory
 
 PG_NAME="postgres_server"
-VOL_NAME="postgres_data"
-LOCK_TAG="DO_NOT_DELETE_ME"
-DB_NAME="findata"
-SCHEMA_NAME="findata_init"
+VOL_NAME="findata_test"
+LOCK_TAG="DO_NOT_DELETE_ME_findata_test"
+DB_NAME="findata_test"
+SCHEMA_NAME="findata_init2"
 
 
 # create docker volume and secure it against
