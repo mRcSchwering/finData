@@ -14,6 +14,19 @@ db.query("SELECT * FROM findata_init2.stock", {}, fetch='one')
 
 class Schema(object):
 
+    def _getTables(self):
+        query = ("""SELECT tablename FROM pg_catalog.pg_tables """
+                 """WHERE schemaname = %{schema_name}s""")
+        args = {'schema_name': AsIs(self.name)}
+        res = self.db.query(query, args, fetch='all')
+        table_names = [tab[0] for tab in res]
+        tables = dict()
+        for table_name in table_names:
+            tables[table_name] = ...
+        # TODO wie krieg ich column names
+        # TODO wie krieg ich data types?
+        # TODO aus namen, update rate extrahieren
+
     # name of the schema
     name = ''
 
@@ -34,7 +47,7 @@ class Schema(object):
     # from scraper table id to name as in DB schema for each table
     conversions = {'table_name': [{'id': 'scraper_id', 'name': 'col_name'}]}
 
-    def __init__(self):
+    def __init__(self, db):
         tabs = [tab for tab in self.tables]
         convs = [tab for tab in self.conversions]
         if set(tabs) != set(convs):
