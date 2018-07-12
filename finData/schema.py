@@ -1,79 +1,66 @@
 # This Python file uses the following encoding: utf-8
+import pandas as pd
 
 # TODO date types sollten eigentlich aus sql geladen werden
 # TODO yearly und daily könnten in table namen encoded werden
 # TODO constriants (zB currency) sollten in sql definiert sein
 
-from psycopg2.
-from finData.dbconnector import DBConnector
-
-db = DBConnector('findata_test', 'postgres', '127.0.0.1', 5432)
-schema = 'findata_init2'
-db.query("SELECT * FROM findata_init2.stock", {}, fetch='one')
+# from finData.dbconnector import DBConnector
+# db = DBConnector('findata_test', 'postgres', '127.0.0.1', 5432)
+# schema = Schema('findata_init2', 'stock', db)
 
 
 class Schema(object):
 
-    def _getTables(self):
-        query = ("""SELECT tablename FROM pg_catalog.pg_tables """
-                 """WHERE schemaname = %{schema_name}s""")
-        args = {'schema_name': AsIs(self.name)}
-        res = self.db.query(query, args, fetch='all')
-        table_names = [tab[0] for tab in res]
-        tables = dict()
-        for table_name in table_names:
-            tables[table_name] = ...
         # TODO wie krieg ich column names
         # TODO wie krieg ich data types?
         # TODO aus namen, update rate extrahieren
 
-    # name of the schema
-    name = ''
-
-    # special treatment, None update rate, str expect for id, no conversion
-    # also the id column will be excluded from insert statement
-    stock_table = ''
-
-    # tables which are updated daily, the rest is considered yearly
-    daily_updates = ['']
-
-    # non-numeric column types as they will be in DB schema
-    date_columns = ['']
-    int_columns = ['']
-
-    # column definitions as in DB schema
-    tables = {'table_name': ['col_name']}
-
-    # from scraper table id to name as in DB schema for each table
-    conversions = {'table_name': [{'id': 'scraper_id', 'name': 'col_name'}]}
-
-    def __init__(self, db):
-        tabs = [tab for tab in self.tables]
-        convs = [tab for tab in self.conversions]
-        if set(tabs) != set(convs):
-            raise AttributeError('Definitions for tables and conversions do not match')
-        if self.stock_table not in tabs:
+    def __init__(self, name, stock_table, db):
+        self.name = name
+        self.stock_table = stock_table
+        self._db = db
+        self.tables = self._getTables()
+        if self.stock_table not in self.tables:
             raise AttributeError('Stock table %s not defined in tables' % self.stock_table)
+        self._info_schema = self._getInfoSchema()
+        #convs = [tab for tab in self.conversions]
+        # if set(tabs) != set(convs):
+        #     raise AttributeError('Definitions for tables and conversions do not match')
 
     def table(self, name):
-        if name not in [tab for tab in self.tables]:
-            raise ValueError('table %s not defined in schema %s' %
-                             (name, self.name))
-        if name == self.stock_table:
-            update_rate = None
-            cols = [key for key in self.tables.get(name)]
-            col_types = {key: 'str' for key in self.tables.get(name)}
-            col_types['id'] = 'int'
-            is_stock_table = True
-        else:
-            update_rate = 'daily' if name in self.daily_updates else 'yearly'
-            cols = [key for key in self.tables.get(name)]
-            col_types = {key: self.getType(key) for key in self.tables.get(name)}
-            is_stock_table = False
-        return Table(name, update_rate, cols, col_types, is_stock_table)
+        if name not in self.tables:
+            raise ValueError('table %s not defined in schema %s' % (name, self.name))
+        # if name == self.stock_table:
+        #     update_rate = None
+        #     cols = [key for key in self.tables.get(name)]
+        #     col_types = {key: 'str' for key in self.tables.get(name)}
+        #     col_types['id'] = 'int'
+        #     is_stock_table = True
+        # else:
+        #     update_rate = 'daily' if name in self.daily_updates else 'yearly'
+        #     cols = [key for key in self.tables.get(name)]
+        #     col_types = {key: self.getType(key) for key in self.tables.get(name)}
+        #     is_stock_table = False
+        return Table(name, self._db, name == self.stock_table, self.name)
 
     def listTables(self):
         return [tab for tab in self.tables]
+
+    def _getTables(self):
+        query = ("""SELECT tablename FROM pg_catalog.pg_tables """
+                 """WHERE schemaname = %(schema_name)s""")
+        args = {'schema_name': self.name}
+        res = self._db.query(query, args, fetch='all')
+        return [tab[0] for tab in res]
+
+    def _getInfoSchema(self):
+        info_cols = ['table_name', 'column_name', 'ordinal_position', 'data_type']
+        query = ("""SELECT {cols} FROM information_schema.columns """
+                 """WHERE table_schema = %(schema)s""").format(cols=', '.join(info_cols))
+        args = {'schema': self.name}
+        df = self._db.query(query, args, fetch='all')
+        return pd.DataFrame(res, columns=info_cols)
 
     @classmethod
     def getType(cls, col_name):
@@ -86,12 +73,19 @@ class Schema(object):
 
 class Table(object):
 
-    def __init__(self, table_name, update_rate, columns, column_types, stock=False):
-        self.name = table_name
-        self.update_rate = update_rate
-        self.columns = columns
-        self._column_types = column_types
-        self.insert_statement = self._prepareInsertStatement(stock)
+    id_column = 'id'
+
+    def __init__(self, name, db, stock, schema):
+        self.name = name
+        self._isStock = stock
+        self._db = db
+        self._schema = schema
+        self.columns = self._getColumns()
+        self.update_rate = self._getUpdateRate()
+        # self.update_rate = update_rate
+        # self.columns = columns
+        # self._column_types = column_types
+        self.insert_statement = self._getInsertStatement()
 
     def column(self, name):
         if name not in [col for col in self._column_types]:
@@ -99,18 +93,22 @@ class Table(object):
                              (name, self.name))
         return Column(name, self._column_types.get(name))
 
-    def listColumns(self):
-        return [col for col in self._column_types]
+    def _getColumns(self):
+        query = ("""SELECT column_name FROM information_schema.columns """
+                 """WHERE table_schema = %(schema)s """
+                 """AND table_name = %(table)s""")
+        args = {'schema': self._schema, 'table': self.name}
+        res = self._db.query(query, args, fetch='all')
+        return [col[0] for col in res]
 
-    def _prepareInsertStatement(self, is_stock_table):
+    def _getUpdateRate(self):
+        return self.name.split('_')[-1]
 
-        if is_stock_table:
-            columns = [col for col in self.columns if col != 'id']
-        else:
-            columns = self.columns
+    def _getInsertStatement(self):
+        columns = [col for col in self.columns if col != self.id_column]
         cols = ','.join(columns)
         vals = ','.join(['%({v})s'.format(v=v) for v in columns])
-        loc = '%(schema_name)s.%(table_name)s'
+        loc = '{schem}.{tab}'.format(schem=self._schema, tab=self.name)
         return """INSERT INTO {loc} ({cols}) VALUES ({vals})""" \
                .format(cols=cols, vals=vals, loc=loc)
 

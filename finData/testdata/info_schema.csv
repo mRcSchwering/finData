@@ -1,0 +1,18 @@
+table_name,column_name,ordinal_position,data_type
+fundamental_yearly,id,1,integer
+fundamental_yearly,stock_id,2,integer
+fundamental_yearly,jahr,3,integer
+fundamental_yearly,umsatz,4,integer
+fundamental_yearly,sum_aktiva,5,double precision
+fundamental_yearly,dividende,6,numeric
+divid_yearly,id,1,integer
+divid_yearly,stock_id,2,integer
+divid_yearly,datum,3,date
+divid_yearly,dividende,4,numeric
+stock,id,1,integer
+stock,name,2,character varying
+stock,isin,3,character varying
+hist_daily,id,1,integer
+hist_daily,stock_id,2,integer
+hist_daily,datum,3,date
+hist_daily,open,4,numeric
