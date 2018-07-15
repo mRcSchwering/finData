@@ -2,13 +2,13 @@
 from finData.connect import Connector
 import argparse
 
-# TODO Schema Klasse, die schema Logik und constraints bereit stellt
-# TODO Facade für main module function programmieren
-# TODO csv reader adden für insert stock
+
 # TODO Connector sollte nur DB connection bereit stellen (high lvl logik in Facade)
 # TODO vllt besser db file mit connector usw Klassen
 # TODO Scraper sollte nicht in Connector sein
-# TODO unterhalb von Facade nur explizit Dependency Injection
+
+# TODO csv reader adden für insert stock
+# TODO add currency constraints via SQL
 # TODO logger anstatt print
 
 

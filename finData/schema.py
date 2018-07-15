@@ -1,11 +1,20 @@
 # This Python file uses the following encoding: utf-8
 import pandas as pd
 
-# TODO constriants (zB currency) sollten in sql definiert sein
-# TODO adapter klasse für scraper -> schema
+# TODO add 'insertRow()' anstatt 'insert_statement'
+# TODO add 'getLatestEntry()' auch direkt als query
 
 
 class Schema(object):
+    """
+    Reads DB schema and provides schema attributes
+
+    name        schema name
+    stock_table name of primary table with stock information
+    table       table names in schema
+
+    table       create table object
+    """
 
     def __init__(self, name, stock_table, db):
         self.name = name
@@ -25,6 +34,9 @@ class Schema(object):
                 .format(tabs=self.tables, infos=info_tabs))
 
     def table(self, name):
+        """
+        Create table object with further table attributes
+        """
         if name not in self.tables:
             raise ValueError('table %s not defined in schema %s' % (name, self.name))
         df = self._info_schema
@@ -49,6 +61,17 @@ class Schema(object):
 
 
 class Table(object):
+    """
+    Provide table attributes
+
+    name                table name
+    update_rate         rate by which data in this table is updated
+    columns             column names in table
+    time_column         column name which has time points
+    insert_statement    SQL statement for inserting a row in this table
+
+    column              create column object
+    """
 
     id_column = 'id'
     time_columns = ['datum', 'jahr']
@@ -64,6 +87,9 @@ class Table(object):
         self.insert_statement = self._getInsertStatement()
 
     def column(self, name):
+        """
+        Create Column object  with further column attributes
+        """
         if name not in self.columns:
             raise ValueError(
                 'column %s not defined in table %s' % (name, self.name))
@@ -97,6 +123,12 @@ class Table(object):
 
 
 class Column(object):
+    """
+    Provide column attributes
+
+    name    column name
+    type    column data type
+    """
 
     def __init__(self, col_name, info_col):
         self.name = col_name
