@@ -1,6 +1,8 @@
 # This Python file uses the following encoding: utf-8
 from psycopg2.extensions import AsIs
 
+# TODO Klasse testen
+
 
 class Stock(object):
     """

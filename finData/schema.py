@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import pandas as pd
 
-# TODO add 'insertRow()' anstatt 'insert_statement'
-# TODO add 'getLatestEntry()' auch direkt als query
+# TODO add 'insertRow()' anstatt 'insert_statement' (auf Table)
+# TODO add 'latestUpdate()' auch direkt als query (auf Table)
 
 
 class Schema(object):

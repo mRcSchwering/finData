@@ -2,10 +2,27 @@
 from finData.connect import Connector
 import argparse
 
+# TODO sowas wie 'testing_utils.py' zum sammeln von test Funktionen
+# TODO TODOs in schema.py machen
+# TODO TODOs in stock.py machen
 
-# TODO Connector sollte nur DB connection bereit stellen (high lvl logik in Facade)
-# TODO vllt besser db file mit connector usw Klassen
-# TODO Scraper sollte nicht in Connector sein
+# TODO sowas wie 'Update' Klasse um über 'update_limit', 'date_today', und zusammen
+# mit 'Table.latestUpdate()' und 'Table.update_rate' berechnen wie lange letztes
+# update in table her war
+
+# TODO Klasse 'Request' als adapter für 'BoerseScraper' und 'AlphaREST'
+# mit 'table()' für Tabellen Namen wird entsprechende Methode benutzt in
+# 'Boerse*' oder 'Alpha*' um Daten zu kriegen requesten/scrapen
+
+# TODO 'AlphaREST' Klasse implementieren
+# TODO 'REST' Basisklasse implementieren
+
+# TODO 'BoerseScraper' Klasse implementieren
+# TODO 'Scraper' Basisklasse implementieren
+
+# TODO FindataFacade und main mit Klassen implementieren
+# TODO integration tests damit
+# TODO alten code löschen
 
 # TODO csv reader adden für insert stock
 # TODO add currency constraints via SQL
@@ -20,10 +37,11 @@ class FindataFacade(object):
     # update limit in years (going into the past from today)
     update_limit = 20
 
-    def __init__(self, connector, scraper):
-        self._schema = schema
-        self._conn = connector
-        self._scraper = scraper
+    def __init__(self):
+        # DBConnector()
+        # Schema()
+        # Update()
+        pass
 
     def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
         """
