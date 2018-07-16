@@ -1,13 +1,10 @@
 # This Python file uses the following encoding: utf-8
 from finData.stock import Stock
-from unittest.mock import MagicMock
-import unittest
-import sys
-import io
+from finData.testing_utils import *
 
 
+# mocking schema
 db = MagicMock()
-
 table = MagicMock()
 table.insert_statement = (
     """INSERT INTO %(schema)s.stock """
@@ -17,18 +14,6 @@ table.insert_statement = (
 schema = MagicMock()
 schema.name = 'schema_name'
 schema.table = MagicMock(return_value=table)
-
-
-# helper for silencing
-class catchStdout:
-
-    def __enter__(self):
-        capture = io.StringIO()
-        sys.stdout = capture
-        return capture
-
-    def __exit__(self, type, value, traceback):
-        sys.stdout = sys.__stdout__
 
 
 class StockSetUp(unittest.TestCase):

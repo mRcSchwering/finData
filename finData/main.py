@@ -2,7 +2,6 @@
 from finData.connect import Connector
 import argparse
 
-# TODO sowas wie 'testing_utils.py' zum sammeln von test Funktionen
 # TODO TODOs in schema.py machen
 # TODO TODOs in stock.py machen
 

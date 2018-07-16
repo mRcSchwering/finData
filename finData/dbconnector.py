@@ -5,6 +5,8 @@ import psycopg2 as pg
 class DBConnector(object):
     """
     Connection to database
+
+    hold attributes of connection and provides query method
     """
 
     def __init__(self, db, user, host, port, password=""):

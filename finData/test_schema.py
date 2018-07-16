@@ -1,10 +1,6 @@
 from finData.schema import Schema
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from finData.testing_utils import *
 import pandas as pd
-import unittest
-import sys
-import io
 
 
 # load test info schema
@@ -27,18 +23,6 @@ def patchGetTables(args_list):
     with patch('finData.schema.Schema._getTables') as tables:
         tables.return_value = TABLES
         return Schema(*args_list)
-
-
-# helper for silencing
-class catchStdout:
-
-    def __enter__(self):
-        capture = io.StringIO()
-        sys.stdout = capture
-        return capture
-
-    def __exit__(self, type, value, traceback):
-        sys.stdout = sys.__stdout__
 
 
 class InfoSchemaPatched(unittest.TestCase):
@@ -125,12 +109,12 @@ class InitTable(unittest.TestCase):
     def test_stockTable(self):
         self.T = self.S.table('stock')
         self.assertEqual(self.T.name, 'stock')
-        self.assertTrue(self.T._isStock)
+        self.assertEqual(self.T._stock_table, 'stock')
 
     def test_normalTable(self):
         self.T = self.S.table('divid_yearly')
         self.assertEqual(self.T.name, 'divid_yearly')
-        self.assertFalse(self.T._isStock)
+        self.assertEqual(self.T._stock_table, 'stock')
 
 
 class StockTable(unittest.TestCase):
@@ -147,13 +131,8 @@ class StockTable(unittest.TestCase):
         act = self.T._info_table['ordinal_position'].tolist()
         self.assertEqual(act, [1, 2, 3])
 
-    def test_infoTable(self):
+    def test_columns(self):
         self.assertEqual(self.T.columns, self.cols)
-
-    def test_infoTable(self):
-        exp = 'INSERT INTO schema_name.stock ({a}) VALUES (%({b})s)' \
-              .format(a=','.join(self.cols[1:]), b=')s,%('.join(self.cols[1:]))
-        self.assertEqual(self.T.insert_statement, exp)
 
     def test_timepointColumn(self):
         self.assertIsNone(self.T.time_column)
@@ -178,13 +157,8 @@ class DividTable(unittest.TestCase):
         act = self.T._info_table['ordinal_position'].tolist()
         self.assertEqual(act, [1, 2, 3, 4])
 
-    def test_infoTable(self):
+    def test_columns(self):
         self.assertEqual(self.T.columns, self.cols)
-
-    def test_infoTable(self):
-        exp = 'INSERT INTO schema_name.divid_yearly ({a}) VALUES (%({b})s)' \
-              .format(a=','.join(self.cols[1:]), b=')s,%('.join(self.cols[1:]))
-        self.assertEqual(self.T.insert_statement, exp)
 
     def test_timepointColumn(self):
         self.assertEqual(self.T.time_column, 'datum')
@@ -209,13 +183,8 @@ class HistTable(unittest.TestCase):
         act = self.T._info_table['ordinal_position'].tolist()
         self.assertEqual(act, [1, 2, 3, 4])
 
-    def test_infoTable(self):
+    def test_columns(self):
         self.assertEqual(self.T.columns, self.cols)
-
-    def test_infoTable(self):
-        exp = 'INSERT INTO schema_name.hist_daily ({a}) VALUES (%({b})s)' \
-              .format(a=','.join(self.cols[1:]), b=')s,%('.join(self.cols[1:]))
-        self.assertEqual(self.T.insert_statement, exp)
 
     def test_timepointColumn(self):
         self.assertEqual(self.T.time_column, 'datum')
@@ -240,13 +209,8 @@ class FundTable(unittest.TestCase):
         act = self.T._info_table['ordinal_position'].tolist()
         self.assertEqual(act, [1, 2, 3, 4, 5, 6])
 
-    def test_infoTable(self):
+    def test_columns(self):
         self.assertEqual(self.T.columns, self.cols)
-
-    def test_infoTable(self):
-        exp = 'INSERT INTO schema_name.fundamental_yearly ({a}) VALUES (%({b})s)' \
-              .format(a=','.join(self.cols[1:]), b=')s,%('.join(self.cols[1:]))
-        self.assertEqual(self.T.insert_statement, exp)
 
     def test_timepointColumn(self):
         self.assertEqual(self.T.time_column, 'jahr')
@@ -270,3 +234,96 @@ class ColumnInit(unittest.TestCase):
         self.T._info_table.iat[1, 3] = 'asd'
         with self.assertRaises(AttributeError):
             self.T.column('name')
+
+
+class InsertRowIntoTable(unittest.TestCase):
+
+    cols = ['id', 'name', 'isin']
+
+    def setUp(self):
+        db = MagicMock()
+        db.query = MagicMock(return_value=[(tab,) for tab in TABLES])
+        self.T = patchInfoSchema(['schema_name', 'stock', db]).table('stock')
+
+    def test_insertCorrectRow(self):
+        row = {c: c for c in self.cols[1:]}
+        res = self.T.insertRow(row)
+        self.assertTrue(res)
+        calls = self.T._db.query.mock_calls
+        self.assertEqual(len(calls), 2)
+        call = calls[1]
+        exp = """INSERT INTO schema_name.stock (name,isin) VALUES (%(name)s,%(isin)s)"""
+        self.assertEqual(call[1][0], exp)
+        exp = {'isin': 'isin', 'name': 'name'}
+        self.assertEqual(call[1][1], exp)
+
+    def test_insertWrongRow(self):
+        row = {c: c for c in self.cols}
+        with self.assertRaises(ValueError):
+            self.T.insertRow(row)
+
+    def test_insertNoRow(self):
+        row = {c: None for c in self.cols[1:]}
+        res = self.T.insertRow(row)
+        self.assertFalse(res)
+
+
+class GetLastTableUpdate(unittest.TestCase):
+
+    stock_id = '123'
+    schema = 'schema'
+    statement = 'SELECT MAX({tp}) FROM {s}.{tab} WHERE stock_id = %(id)s'
+
+    def setUp(self):
+        self.db = MagicMock()
+        self.db.query = MagicMock(return_value=[(tab,) for tab in TABLES])
+
+    def test_returnValue(self):
+        T = patchInfoSchema(['schema', 'stock', self.db]).table('hist_daily')
+        T._db.query = MagicMock(return_value=('latest_date',))
+        res = T.lastUpdate(self.stock_id)
+        self.assertEqual(res, 'latest_date')
+
+    def test_histCalls(self):
+        tab = 'hist_daily'
+        tp = 'datum'
+        T = patchInfoSchema(['schema', 'stock', self.db]).table(tab)
+        T.lastUpdate(self.stock_id)
+        calls = T._db.query.mock_calls
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1][1][2], 'one')
+        exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
+        self.assertEqual(calls[1][1][0], exp)
+        exp = {'isin': self.stock_id}
+        self.assertEqual(calls[1][1][1], exp)
+
+    def test_fundCalls(self):
+        tab = 'fundamental_yearly'
+        tp = 'jahr'
+        T = patchInfoSchema(['schema', 'stock', self.db]).table(tab)
+        T.lastUpdate(self.stock_id)
+        calls = T._db.query.mock_calls
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1][1][2], 'one')
+        exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
+        self.assertEqual(calls[1][1][0], exp)
+        exp = {'isin': self.stock_id}
+        self.assertEqual(calls[1][1][1], exp)
+
+    def test_dividCalls(self):
+        tab = 'divid_yearly'
+        tp = 'datum'
+        T = patchInfoSchema(['schema', 'stock', self.db]).table(tab)
+        T.lastUpdate(self.stock_id)
+        calls = T._db.query.mock_calls
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1][1][2], 'one')
+        exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
+        self.assertEqual(calls[1][1][0], exp)
+        exp = {'isin': self.stock_id}
+        self.assertEqual(calls[1][1][1], exp)
+
+    def test_stockTableHasNoUpdate(self):
+        T = patchInfoSchema(['schema', 'stock', self.db]).table('stock')
+        with self.assertRaises(ValueError):
+            T.lastUpdate(self.stock_id)

@@ -1,24 +1,9 @@
 # This Python file uses the following encoding: utf-8
 from finData.dbconnector import DBConnector
-from unittest.mock import patch
-from unittest.mock import MagicMock
-import unittest
+from finData.testing_utils import *
 
 # pseudo connection info (will be mocked)
 conn_list = ['findata', 'postgres', '127.0.0.1', 5432]
-
-
-# mocking DB connection
-def mockDBconnect(mockDB):
-    cur = MagicMock()
-    cur.__enter__ = MagicMock(return_value=mockDB)
-    cur.__exit__ = MagicMock(return_value=False)
-    con = MagicMock()
-    con.cursor = MagicMock(return_value=cur)
-    conn = MagicMock()
-    conn.__enter__ = MagicMock(return_value=con)
-    conn.__exit__ = MagicMock(return_value=False)
-    return conn
 
 
 # patching DB connection
@@ -26,11 +11,6 @@ def patchConnect(mocked):
     with patch('finData.dbconnector.DBConnector._connect') as connect:
         connect.return_value = mocked
         return DBConnector(*conn_list)
-
-
-# extracting cursor from mocked connection
-def getCursor(x):
-    return x.conn.__enter__().cursor().__enter__()
 
 
 class DBConnectorSetUp(unittest.TestCase):

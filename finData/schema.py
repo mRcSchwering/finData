@@ -1,8 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import pandas as pd
 
-# TODO add 'insertRow()' anstatt 'insert_statement' (auf Table)
-# TODO add 'latestUpdate()' auch direkt als query (auf Table)
+
+# TODO add stockId() um id von ISIN zu holen
 
 
 class Schema(object):
@@ -42,7 +42,7 @@ class Schema(object):
         df = self._info_schema
         df = df.loc[df['table_name'] == name]
         df = df.sort_values(by=['ordinal_position'])
-        return Table(name, name == self.stock_table, df, self.name)
+        return Table(name, self.stock_table, df, self.name, self._db)
 
     def _getTables(self):
         query = ("""SELECT tablename FROM pg_catalog.pg_tables """
@@ -68,23 +68,24 @@ class Table(object):
     update_rate         rate by which data in this table is updated
     columns             column names in table
     time_column         column name which has time points
-    insert_statement    SQL statement for inserting a row in this table
 
     column              create column object
+    insertRow           insert new row into table
+    lastUpdate          get time point of latest entry
     """
 
     id_column = 'id'
     time_columns = ['datum', 'jahr']
 
-    def __init__(self, name, stock, info_table, schema):
+    def __init__(self, name, stock, info_table, schema, db):
         self.name = name
         self._schema = schema
-        self._isStock = stock
+        self._stock_table = stock
         self._info_table = info_table
+        self._db = db
         self.update_rate = self._getUpdateRate()
         self.columns = self._getColumns()
         self.time_column = self._getTimeColumn()
-        self.insert_statement = self._getInsertStatement()
 
     def column(self, name):
         """
@@ -96,11 +97,38 @@ class Table(object):
         df = self._info_table
         return Column(name, df.loc[df['column_name'] == name])
 
+    def insertRow(self, row):
+        """
+        Insert row by providing dict with column names
+        """
+        query = self._getInsertStatement()
+        keys = [k for k in row]
+        cols = [col for col in self.columns if col != self.id_column]
+        if set(keys) != set(cols):
+            raise ValueError('Column definitions not matching. Provided: {p}; Needed: {n}'
+                             .format(p=keys, n=cols))
+        vals = [row[k] for k in row]
+        if set(vals) == set([None]):
+            return False
+        self._db.query(query, row)
+        return True
+
+    def lastUpdate(self, stock_id):
+        """
+        Show time point of latest table entry for a stock by stock id
+        """
+        if self.name == self._stock_table:
+            raise ValueError('This table has no updates')
+        query = self._getLatestUpdateStatement()
+        args = {'isin': stock_id}
+        res = self._db.query(query, args, 'one')
+        return res[0]
+
     def _getColumns(self):
         return self._info_table.get('column_name').tolist()
 
     def _getUpdateRate(self):
-        if self._isStock:
+        if self.name == self._stock_table:
             return None
         splitted = self.name.split('_')
         if len(splitted) < 2:
@@ -116,10 +144,16 @@ class Table(object):
                .format(cols=cols, vals=vals, loc=loc)
 
     def _getTimeColumn(self):
-        if self._isStock:
+        if self.name == self._stock_table:
             return None
         cols = [col for col in self.columns if col in self.time_columns]
         return cols[0]
+
+    def _getLatestUpdateStatement(self):
+        stock_id = self._stock_table + '_' + self.id_column
+        loc = '{schem}.{tab}'.format(schem=self._schema, tab=self.name)
+        return """SELECT MAX({tp}) FROM {loc} WHERE {id} = %(id)s""" \
+               .format(tp=self.time_column, loc=loc, id=stock_id)
 
 
 class Column(object):
