@@ -2,9 +2,6 @@
 import pandas as pd
 
 
-# TODO add stockId() um id von ISIN zu holen
-
-
 class Schema(object):
     """
     Reads DB schema and provides schema attributes
@@ -122,6 +119,8 @@ class Table(object):
         query = self._getLatestUpdateStatement()
         args = {'isin': stock_id}
         res = self._db.query(query, args, 'one')
+        if res is None:
+            return None
         return res[0]
 
     def _getColumns(self):

@@ -284,6 +284,12 @@ class GetLastTableUpdate(unittest.TestCase):
         res = T.lastUpdate(self.stock_id)
         self.assertEqual(res, 'latest_date')
 
+    def test_emptyReturnValue(self):
+        T = patchInfoSchema(['schema', 'stock', self.db]).table('hist_daily')
+        T._db.query = MagicMock(return_value=None)
+        res = T.lastUpdate(self.stock_id)
+        self.assertIsNone(res)
+
     def test_histCalls(self):
         tab = 'hist_daily'
         tp = 'datum'

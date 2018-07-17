@@ -2,12 +2,14 @@
 from finData.connect import Connector
 import argparse
 
-# TODO TODOs in schema.py machen
-# TODO TODOs in stock.py machen
+
+# TODO mal main methode "halb" schreiben
+# wie würde update prozedur verlaufen mit db, schema, stock
 
 # TODO sowas wie 'Update' Klasse um über 'update_limit', 'date_today', und zusammen
 # mit 'Table.latestUpdate()' und 'Table.update_rate' berechnen wie lange letztes
-# update in table her war
+# update in table her war -> braucht schema
+# braucht stock_id oder stock mit isin
 
 # TODO Klasse 'Request' als adapter für 'BoerseScraper' und 'AlphaREST'
 # mit 'table()' für Tabellen Namen wird entsprechende Methode benutzt in
