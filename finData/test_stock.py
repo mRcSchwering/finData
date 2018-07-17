@@ -32,10 +32,10 @@ class StockSetUp(unittest.TestCase):
         self.assertIsNone(self.S.avan_ticker)
 
     def test_dbMockingWorks(self):
-        self.assertEqual(self.S.db.query(), 'hi')
+        self.assertEqual(self.S._db.query(), 'hi')
 
     def test_schemaMockingWorks(self):
-        self.assertEqual(self.S.schema.name, 'schema_name')
+        self.assertEqual(self.S._schema.name, 'schema_name')
 
 
 class ExistsReturningNone(unittest.TestCase):
@@ -49,7 +49,7 @@ class ExistsReturningNone(unittest.TestCase):
         self.assertFalse(self.res)
 
     def test_correctQuery(self):
-        calls = self.S.db.query.mock_calls
+        calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
         exp_query = 'SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s'
         self.assertEqual(calls[0][1][0], exp_query)
@@ -77,7 +77,7 @@ class ExistsReturningEmpty(unittest.TestCase):
         self.assertFalse(self.res)
 
     def test_correctQuery(self):
-        calls = self.S.db.query.mock_calls
+        calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
         exp_query = 'SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s'
         self.assertEqual(calls[0][1][0], exp_query)
@@ -106,7 +106,7 @@ class ExistsReturningStockInfo(unittest.TestCase):
         self.assertTrue(self.res)
 
     def test_correctQuery(self):
-        calls = self.S.db.query.mock_calls
+        calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
         exp_query = 'SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s'
         self.assertEqual(calls[0][1][0], exp_query)
@@ -179,15 +179,15 @@ class InsertNewStock(unittest.TestCase):
         self.assertIsNone(self.S.avan_ticker)
 
     def test_2existsCalls(self):
-        calls = self.S.db.query.mock_calls
+        calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 2)
 
     def test_schemaTableCall(self):
-        calls = self.S.schema.table.mock_calls
+        calls = self.S._schema.table.mock_calls
         self.assertEqual(calls[0][1][0], 'stock')
 
     def test_insertRowCall(self):
-        table = self.S.schema.table()
+        table = self.S._schema.table()
         calls = table.insertRow.mock_calls
         self.assertEqual(len(calls), 1)
         exp = ['isin', 'schema', 'avan_ticker', 'boerse_name', 'name', 'currency']

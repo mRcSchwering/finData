@@ -2,10 +2,6 @@
 from finData.connect import Connector
 import argparse
 
-
-# TODO mal main methode "halb" schreiben
-# wie würde update prozedur verlaufen mit db, schema, stock
-
 # TODO sowas wie 'Update' Klasse um über 'update_limit', 'date_today', und zusammen
 # mit 'Table.latestUpdate()' und 'Table.update_rate' berechnen wie lange letztes
 # update in table her war -> braucht schema
@@ -38,77 +34,45 @@ class FindataFacade(object):
     # update limit in years (going into the past from today)
     update_limit = 20
 
-    def __init__(self):
-        # DBConnector()
-        # Schema()
-        # Update()
-        pass
+    def __init__(self, db_name, user, host, port,
+                 password, schema_name, stock_table):
+        self._db = DBConnector(db_name, user, host, port, password)
+        self._schema = Schema(schema_name, stock_table, self._db)
+        self._stock = Stock(self._db, self._schema)
 
-    def insertStock(self, name, isin, wkn, typ, currency, boerse_name, avan_ticker):
+    def insertStock(self, name, isin, currency, boerse_name, avan_ticker):
         """
         Insert stock symbol into stocks table if it doesnt already exist
         """
-        res = self._conn.stockIdFromISIN(isin)
-        if res is not None and len(res) > 0:
-            print('{name} (isin: {isin}) not inserted, it already exists'
-                  .format(name=name, isin=isin))
-        else:
-            self._conn.insertStock(
-                name, isin, wkn, typ, currency, boerse_name, avan_ticker)
-            print('{name} (isin: {isin}) inserted'.format(name=name, isin=isin))
+        res = self._stock.insert(name, isin, currency, avan_ticker, boerse_name)
+        return res
 
     def updateData(self):
         """
         Bring data for each stock symbol in database up to todays date
         """
-        # with self.conn as con:
-        #     with con.cursor() as cur:
-        #         cur.execute("""SELECT id, name, isin FROM %(schema)s.stock""",
-        #                     {'schema': AsIs(self.schema_name)})
-        #         stockIds = cur.fetchall()
-        # TODO aus auskommentierten oben, methoden unten machen
-        stocks = self._conn.getAllStockSymbols()
-        n = len(stocks)
-        for i in range(n):
-            stock = stocks[i]
+        isins = self._getAllStockISINs()
+        n = len(isins)
+        for isin in range(n):
+            self._stock.exists(isin)
             print("\n[{i}/{n}]\tUpdating {name} ({isin})..."
-                  .format(i=i+1, n=n, name=stock[i][1], isin=stocks[i][2]))
-            self.updateSingleStock(stocks[i][0])
+                  .format(i=i+1, n=n, name=self._stock.name, isin=self._stock.isin))
+            self.updateSingleStock()
         print("...done")
         return True
 
-    def updateSingleStock(self, stockId):
+    def updateSingleStock(self):
         """
         Bring data for a single stock symbol up to todays date
         """
-        # with self.conn as con:
-        #     with con.cursor() as cur:
-        #         cur.execute("""SELECT * FROM %(schema)s.stock WHERE id = %(id)s""",
-        #                     {'schema': AsIs(self.schema_name), 'id': stockId})
-        #         res = cur.fetchone()[1:]
-        # TODO vllt kann man die (oben) mit getAllStockSymbols() methode
-        # kombinieren (muss noch implementiert werden)
-        res = self._conn.getStockSymbol()
-        stockInfo = {
-            'name': res[0],
-            'isin': res[1],
-            'wkn': res[2],
-            'typ': res[3],
-            'currency': res[4],
-            'boerse_name': res[5],
-            'avan_ticker': res[6]
-        }
-        stock = fDs.Scraper(name=stockInfo['name'], isin=stockInfo['isin'],
-                            currency=stockInfo['currency'], wkn=stockInfo['wkn'],
-                            boerse_name=stockInfo['boerse_name'], typ=stockInfo['typ'],
-                            avan_ticker=stockInfo['avan_ticker'])
-        # TODO hier würde vermutlich eher ne liste an scrapern/requestern
-        # übergeben werden, da verschiedene optionen
-        # welche tabelle wo rein kommt entweder hier mit rein geben
-        # oder database.Connector kann das selber zB aus Schema raus lesen
-        self._conn.updateYearTables(self._scraper, stockId)
-        self._conn.updateDateTables(self._scraper, stockId)
-        self._conn.updateDayTables(self._scraper, stockId)
+        date_today = self._getDateToday()
+        self._request(self._stock, self.update_limit)
+        table_names = ['divid_yearly', 'fundamental_yearly', 'hist_daily']
+        for table_name in table_names:
+            table = self._schema.table(table_name)
+            update_rate = table.update_rate
+            latest_update = table.latestUpdate()
+            self._request.table(table, update_rate, latest_update, date_today)
 
 
 if __name__ == "__main__":

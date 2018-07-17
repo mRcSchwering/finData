@@ -18,16 +18,16 @@ class Stock(object):
                    'INR', 'CNY', 'JPY', 'KRW', 'RUB']
 
     def __init__(self, db, schema):
-        self.db = db
-        self.schema = schema
+        self._db = db
+        self._schema = schema
 
     def exists(self, isin):
         """
         Get stock information by ISIN if exists in stock table
         """
         query = """SELECT * FROM %{schema}s.stock WHERE isin = %{isin}s"""
-        args = {'schema': AsIs(self.schema.name), 'isin': isin}
-        res = self.db.query(query, args, fetch='one')
+        args = {'schema': AsIs(self._schema.name), 'isin': isin}
+        res = self._db.query(query, args, fetch='one')
         if res is None or len(res) < 1:
             return False
         self._id = res[0]
@@ -50,10 +50,10 @@ class Stock(object):
             print('{name} (isin: {isin}) not inserted, it already exists'
                   .format(name=self.name, isin=self.isin))
             return False
-        args = {'schema': AsIs(self.schema.name), 'name': name, 'isin': isin,
+        args = {'schema': AsIs(self._schema.name), 'name': name, 'isin': isin,
                 'currency': currency, 'boerse_name': boerse_name,
                 'avan_ticker': avan_ticker}
-        res = self.schema.table('stock').insertRow(args)
+        res = self._schema.table('stock').insertRow(args)
         if res:
             self.exists(isin)
             return True
