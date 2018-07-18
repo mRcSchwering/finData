@@ -2,10 +2,13 @@
 from finData.connect import Connector
 import argparse
 
-# TODO sowas wie 'Update' Klasse um über 'update_limit', 'date_today', und zusammen
-# mit 'Table.latestUpdate()' und 'Table.update_rate' berechnen wie lange letztes
-# update in table her war -> braucht schema
-# braucht stock_id oder stock mit isin
+# TODO testdata updaten
+# stock der nciht existet (also einen vorhalten)
+# stock mit daten, die aktuell sind
+# stock mit daten die alt sind
+# stock ohne daten
+
+# TODO TODOs in timeline.py
 
 # TODO Klasse 'Request' als adapter für 'BoerseScraper' und 'AlphaREST'
 # mit 'table()' für Tabellen Namen wird entsprechende Methode benutzt in
