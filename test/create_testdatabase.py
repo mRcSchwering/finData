@@ -1,27 +1,112 @@
 # This Python file uses the following encoding: utf-8
-from data.schemata.schema_init import schema_init as schema  # the current schema
+from finData.dbconnector import DBConnector
+from finData.schema import Schema
+from finData.stock import Stock
 from psycopg2.extensions import AsIs
-import psycopg2 as pg
-import argparse
 import pickle
+import numpy
+import pandas as pd
 
-stock_cols = ("'{name}','{isin}','{wkn}','{typ}','{currency}',"
-              "'{boerse_name}','{avan_ticker}'")
-tab_cols = {
-    'guv': "{year},{umsatz},{bruttoergeb},{EBIT},{EBT},{jahresueber},{dividendena}",
-    'bilanz': ("{year},{umlaufvermo},{anlagevermo},{sum_aktiva},{kurzfr_verb},"
-               "{langfr_verb},{gesamt_verb},{eigenkapita},{sum_passiva},"
-               "{eigen_quote},{fremd_quote}"),
-    'kennza': ("{year},{gewinn_verw},{gewinn_unvw},{umsatz},{buchwert},"
-               "{dividende},{KGV},{KBV},{KUV}"),
-    'rentab': "{year},{umsatzren},{eigenkapren},{geskapren},{dividren}",
-    'marktk': "{year},{zahl_aktien},{marktkapita}",
-    'divid': "'{datum}',{dividende},{veraenderu},{rendite}",
-    'hist': ("'{datum}',{open},{high},{low},{close},"
-             "{adj_close},{volume},{divid_amt},{split_coef}")
-}
+# Setup
+db_name = 'findata_test'
+schema_name = 'findata_init2'
+host = 'localhost'
+port = 5432
+user = 'postgres'
+password = ''
+
+db = DBConnector(db_name, user, host, port, password)
+schema = Schema(schema_name, 'stock', db)
+stock = Stock(db, schema)
+
+with open('test/testdata/testdata.pkl', 'rb') as inf:
+    data = pickle.load(inf)
 
 
+# Insert Stock
+DBK = data.get('DBK.DE')
+assert stock.exists(DBK['stock']['isin']) is False
+
+res = stock.insert(DBK['stock']['name'], DBK['stock']['isin'],
+                   DBK['stock']['currency'], DBK['stock']['avan_ticker'],
+                   DBK['stock']['boerse_name'])
+assert res is True
+
+res = stock.insert(DBK['stock']['name'], DBK['stock']['isin'],
+                   DBK['stock']['currency'], DBK['stock']['avan_ticker'],
+                   DBK['stock']['boerse_name'])
+assert res is False
+
+assert stock.exists(DBK['stock']['isin']) is True
+
+
+# Insert Hist
+df = DBK['hist']
+for i in range(df.shape[0]):
+    row = df.iloc[i].to_dict()
+    row['stock_id'] = stock._id
+    hist = schema.table('hist_daily')
+    assert hist.insertRow(row) is True
+
+# Insert Divid
+df = DBK['divid']
+for i in range(df.shape[0]):
+    row = df.iloc[i].to_dict()
+    row['stock_id'] = stock._id
+    divid = schema.table('divid_yearly')
+    assert divid.insertRow(row) is True
+
+# Insert Fund
+fund = schema.table('fundamental_yearly')
+df = pd.DataFrame(DBK['guv'])
+guv = df[['year', 'umsatz', 'bruttoergeb', 'EBIT', 'EBT', 'jahresueber', 'dividendena']]
+df = pd.DataFrame(DBK['bilanz'])
+bilanz = df[['umlaufvermo', 'anlagevermo', 'sum_aktiva', 'kurzfr_verb', 'langfr_verb', 'gesamt_verb', 'eigenkapita', 'sum_passiva', 'eigen_quote', 'fremd_quote']]
+df = pd.DataFrame(DBK['kennza'])
+kennza = df[['gewinn_verw', 'gewinn_unvw', 'umsatz', 'buchwert', 'dividende', 'KGV', 'KBV', 'KUV']]
+df = pd.DataFrame(DBK['rentab'])
+rentab = df[['umsatzren', 'eigenkapren', 'geskapren', 'dividren']]
+df = pd.DataFrame(DBK['person'])
+person = df[['personal', 'aufwand', 'umsatz', 'gewinn']]
+df = pd.DataFrame(DBK['marktk'])
+marktk = df[['zahl_aktien', 'marktkapita']]
+
+df = pd.concat([guv, bilanz, kennza, rentab, person, marktk], axis=1)
+df.columns = fund.columns[2:]
+for i in range(df.shape[0]):
+    row = df.iloc[i].to_dict()
+    row['stock_id'] = stock._id
+    for key in row:
+        if numpy.isnan(row[key]):
+            row[key] = AsIs('NULL')
+    assert fund.insertRow(row) is True
+
+
+# Insert Another Stock
+data = data.get('ADS.DE')
+assert stock.exists(data['stock']['isin']) is False
+
+res = stock.insert(data['stock']['name'], data['stock']['isin'],
+                   data['stock']['currency'], data['stock']['avan_ticker'],
+                   data['stock']['boerse_name'])
+assert res is True
+
+res = stock.insert(data['stock']['name'], data['stock']['isin'],
+                   data['stock']['currency'], data['stock']['avan_ticker'],
+                   data['stock']['boerse_name'])
+assert res is False
+
+assert stock.exists(data['stock']['isin']) is True
+
+
+
+
+
+sts = """SELECT MAX(datum) FROM findata_init2.hist_daily WHERE stock_id = 2"""
+res = db.query(sts, {}, 'all')
+res
+
+# ####### OLD CODE ########
 def connector(dbname, user, host, port, password=""):
     if password == "":
         return pg.connect(dbname=dbname, user=user, host=host, port=port)

@@ -12,11 +12,45 @@ from finData.stock import Stock
 db = DBConnector('findata_test', 'postgres', 'localhost', 5432)
 schema = Schema('findata_init2', 'stock', db)
 stock = Stock(db, schema)
-
 tl = Timeline(schema, stock)  # error because stock not set
+
+# stock without data
+assert stock.exists('DE000A1EWWW0') is True
+tl = Timeline(schema, stock)
 tl.today
-tl.table('stock')  # error because stock has no update rate
+schema.table('hist_daily').lastUpdate(2) is None
 tl.table('hist_daily')
+tl.last_update
+assert tl.type == 'date'
+
+# stock with data
+assert stock.exists('DE0005140008') is True
+tl = Timeline(schema, stock)
+tl.today
+
+exp = schema.table('hist_daily').lastUpdate(1)
+tl.table('hist_daily')
+assert tl.last_update == exp
+assert tl.type == 'date'
+assert tl._table.update_rate == 'daily'
+tl.today - tl.last_update
+
+exp = schema.table('divid_yearly').lastUpdate(1)
+tl.table('divid_yearly')
+assert tl.last_update == exp
+assert tl.type == 'date'
+assert tl._table.update_rate == 'yearly'
+tl.today - tl.last_update
+
+# ausversehen für anderen stock fundamental einebaut
+exp = schema.table('fundamental_yearly').lastUpdate(2)
+assert stock.exists('DE000A1EWWW0') is True
+tl = Timeline(schema, stock)
+tl.table('fundamental_yearly')
+assert tl.last_update == exp
+assert tl.type == 'integer'
+assert tl._table.update_rate == 'yearly'
+tl.today - tl.last_update  # geht so nicht
 
 
 class Timeline(object):
@@ -40,7 +74,7 @@ class Timeline(object):
         self.today = dt.date.today()
         self._table = None
         self.last_update = None
-        self._type = None
+        self.type = None
         self.time_missing = None
 
     def table(self, name):
@@ -55,8 +89,8 @@ class Timeline(object):
                 'Table %s not defined in schema %s' % (name, self._schema.name))
         self._table = self._schema.table(name)
         self.last_update = self._table.lastUpdate(self._stock._id)
-        time_column = self.table.time_column
-        self.type = self.table.column(time_column).type
+        time_column = self._table.time_column
+        self.type = self._table.column(time_column).type
         self.years_missing = self._getMissingYears()
         self.days_missing = self._getMissingDays()
 

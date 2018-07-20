@@ -117,7 +117,7 @@ class Table(object):
         if self.name == self._stock_table:
             raise ValueError('This table has no updates')
         query = self._getLatestUpdateStatement()
-        args = {'isin': stock_id}
+        args = {'id': stock_id}
         res = self._db.query(query, args, 'one')
         if res is None:
             return None

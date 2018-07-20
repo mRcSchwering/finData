@@ -300,7 +300,7 @@ class GetLastTableUpdate(unittest.TestCase):
         self.assertEqual(calls[1][1][2], 'one')
         exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
         self.assertEqual(calls[1][1][0], exp)
-        exp = {'isin': self.stock_id}
+        exp = {'id': self.stock_id}
         self.assertEqual(calls[1][1][1], exp)
 
     def test_fundCalls(self):
@@ -313,7 +313,7 @@ class GetLastTableUpdate(unittest.TestCase):
         self.assertEqual(calls[1][1][2], 'one')
         exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
         self.assertEqual(calls[1][1][0], exp)
-        exp = {'isin': self.stock_id}
+        exp = {'id': self.stock_id}
         self.assertEqual(calls[1][1][1], exp)
 
     def test_dividCalls(self):
@@ -326,7 +326,7 @@ class GetLastTableUpdate(unittest.TestCase):
         self.assertEqual(calls[1][1][2], 'one')
         exp = self.statement.format(tp=tp, s=self.schema, tab=tab)
         self.assertEqual(calls[1][1][0], exp)
-        exp = {'isin': self.stock_id}
+        exp = {'id': self.stock_id}
         self.assertEqual(calls[1][1][1], exp)
 
     def test_stockTableHasNoUpdate(self):

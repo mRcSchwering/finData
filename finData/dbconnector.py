@@ -22,6 +22,8 @@ class DBConnector(object):
         Execute custom query as is and fetch 'one'/'all' if needed
         """
         res = None
+        if not isinstance(arguments, dict):
+            raise ValueError('Provide arguments as dictionary')
         with self.conn as con:
             with con.cursor() as cur:
                 cur.execute(statement, arguments)

@@ -50,19 +50,23 @@ class Queries(unittest.TestCase):
         self.assertEqual(calls[0][1], ('statement', {'arg': 'value'}))
 
     def test_fetchAll(self):
-        res = self.C.query('statement', 'args', 'all')
+        res = self.C.query('statement', {'arg': 'value'}, 'all')
         calls = getCursor(self.C).method_calls
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0][0], 'execute')
-        self.assertEqual(calls[0][1], ('statement', 'args'))
+        self.assertEqual(calls[0][1], ('statement', {'arg': 'value'}))
         self.assertEqual(calls[1][0], 'fetchall')
         self.assertEqual(res, 'all')
 
     def test_fetchOne(self):
-        res = self.C.query('statement', 'args', 'one')
+        res = self.C.query('statement', {'arg': 'value'}, 'one')
         calls = getCursor(self.C).method_calls
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0][0], 'execute')
-        self.assertEqual(calls[0][1], ('statement', 'args'))
+        self.assertEqual(calls[0][1], ('statement', {'arg': 'value'}))
         self.assertEqual(calls[1][0], 'fetchone')
         self.assertEqual(res, 'one')
+
+    def test_argumentsForgotten(self):
+        with self.assertRaises(ValueError):
+            self.C.query('statement', 'all')
