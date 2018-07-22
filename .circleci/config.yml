@@ -18,6 +18,27 @@ jobs:
             docker login -u="$DOCKERHUB_USER" -p="$DOCKERHUB_PASS"
             docker push "$build"
 
+  unittest-dbconnector:
+    docker:
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
+    steps:
+      - run: python3 -m unittest discover -s finData -v -p "*test_dbconnector*"
+
+  unittest-schema:
+    docker:
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
+    steps:
+      - run: python3 -m unittest discover -s finData -v -p "*test_schema*"
+
+  unittest-stock:
+    docker:
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
+    steps:
+      - run: python3 -m unittest discover -s finData -v -p "*test_stock*"
+
   unittest-scraper:
     docker:
       - image: mrcschwering/cci-findata_build:latest
@@ -104,10 +125,22 @@ workflows:
       - unittest-connector:
           requires:
             - build
+      - unittest-dbconnector:
+          requires:
+            - build
+      - unittest-schema:
+          requires:
+            - build
+      - unittest-stock:
+          requires:
+            - build
       - integration-tests:
           requires:
             - unittest-scraper
             - unittest-connector
+            - unittest-dbconnector
+            - unittest-schema
+            - unittest-stock
       - deploy:
           requires:
             - integration-tests
