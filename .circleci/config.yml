@@ -39,6 +39,13 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s finData -v -p "*test_stock*"
 
+  unittest-history:
+    docker:
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
+    steps:
+      - run: python3 -m unittest discover -s finData -v -p "*test_history*"
+
   unittest-scraper:
     docker:
       - image: mrcschwering/cci-findata_build:latest
@@ -134,6 +141,9 @@ workflows:
       - unittest-stock:
           requires:
             - build
+      - unittest-history:
+          requires:
+            - build
       - integration-tests:
           requires:
             - unittest-scraper
@@ -141,6 +151,7 @@ workflows:
             - unittest-dbconnector
             - unittest-schema
             - unittest-stock
+            - unittest-history
       - deploy:
           requires:
             - integration-tests
