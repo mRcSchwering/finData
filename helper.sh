@@ -93,7 +93,7 @@ if [ $1 ]; then
         sudo docker-compose up -d
         sleep 5
         printf "\n\nCreating DB $DB_NAME with schema $SCHEMA_NAME...\n\n"
-        sudo docker-compose run client "CREATE DATABASE findata;"
+        sudo docker-compose run client "CREATE DATABASE $DB_NAME;"
         sudo docker-compose run app test.create_testdatabase \
           --db "$DB_NAME" \
           --schema "$SCHEMA_NAME" \

@@ -1,7 +1,9 @@
 # This Python file uses the following encoding: utf-8
+from finData.dbconnector import DBConnector
+from finData.schema import Schema
+from finData.stock import Stock
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
-import finData.connect as fDc
 import argparse
 import sys
 import io
@@ -9,7 +11,8 @@ import re
 
 
 # used several times
-adidas = ['Adidas', 'DE000A1EWWW0', 'A1EWWW', 'Aktie', 'EUR', 'Adidas-Aktie', 'ADS.DE']
+ADIDAS = {'name': 'Adidas', 'isin': 'DE000A1EWWW0', 'currency': 'EUR',
+          'boerse_name': 'Adidas-Aktie', 'avan_ticker': 'ADS.DE'}
 
 
 # visually separating tests
@@ -29,78 +32,34 @@ class catchStdout:
         sys.stdout = sys.__stdout__
 
 
-# reduce updates
-class testConnect(fDc.Connector):
-
-    update_limit = 2
-
-
 def main(db_name, schema_name, user, host, port, password):
-    X = testConnect(db_name=db_name, schema_name=schema_name,
-                    user=user, host=host, port=port, password=password)
 
-    _log("Show databases have findata")
-    res = X._customSQL("SELECT id FROM %s.stock" % schema_name, fetch=True)
+    _log("Set up classes")
+    db = DBConnector(db_name, user, host, port, password)
+    schema = Schema(schema_name, 'stock', db)
+    stock = Stock(db, schema)
+
+    _log("Query stock using DBConnector")
+    query = """SELECT id FROM {}.stock""".format(schema_name)
+    res = db.query(query, {}, 'all')
     assert len(res) == 7
 
-    _log("Unsafe insert stock douplicate")
+    _log("Trying to insert doublicate stock using schema")
     try:
-        X._unsaveInsertStock(*adidas)
+        schema.table('stock').insertRow(ADIDAS)
     except pg.IntegrityError:
         _log("IntegrityError raised, UNIQUE constraint enforced")
     else:
         raise AssertionError("UNIQUE constraint was not enforced")
 
-    _log("Safe insert stock douplicate")
-    with catchStdout() as cap:
-        X.insertStock(*adidas)
-        capture = cap
-    expected = '{name} (isin: {isin}) not inserted, it already exists\n' \
-               .format(name=adidas[0], isin=adidas[1])
-    assert capture.getvalue() == expected
-
-    _log("Insert bad NULL into stock")
-    colNames = 'name,isin,wkn,typ,currency,boerse_name,avan_ticker'
-    vals = """'test',NULL,'test','test','test','test','test'"""
-    try:
-        X._customSQL("""INSERT INTO {schema}.stock ({cols}) VALUES ({vals})"""
-                     .format(schema=AsIs(schema_name), cols=colNames, vals=vals))
-    except pg.IntegrityError:
-        _log("IntegrityError raised, NOT NULL constraint enforced")
-    else:
-        raise AssertionError("NOT NULL constraint was not enforced")
-
-    _log("Get Adidas stock id by ISIN")
-    stockId = X.stockIdFromISIN(adidas[1])[0]
-    res = X._customSQL("""SELECT isin FROM {schema}.stock WHERE id = {id}"""
-                       .format(schema=AsIs(schema_name), id=stockId), fetch=True)
-    assert adidas[1] == res[0][0]
-
-    _log("Update Data")
-    with catchStdout() as cap:
-        X.updateData()
-        capture = cap
-    print(capture.getvalue())
-    # should be at least 40 days behind (for years can be below 2..)
-    days = re.findall('([0-9]+) missing days', capture.getvalue())
-    years = re.findall('([0-9]+) missing years', capture.getvalue())
-    assert 2 * len(days) == len(years)
-    assert len(days) == 7
-    assert [int(day) >= 40 for day in days] == [True] * len(days)
-
-    _log("Unnecessary data update")
-    with catchStdout() as cap:
-        X.updateData()
-        capture = cap
-    print(capture.getvalue())
-    # now days and years should be lower because they were updated before
-    days = re.findall('([0-9]+) missing days', capture.getvalue())
-    years = re.findall('([0-9]+) missing years', capture.getvalue())
-    assert 2 * len(days) == len(years)
-    assert len(days) == 7
-    assert 2 * len(days) == len(years)
-    assert [int(day) <= 2 for day in days] == [True] * len(days)
-    assert [int(year) <= 1 for year in years] == [True] * len(years)
+    _log("Trying to insert doublicate stock using stock")
+    stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
+                 ADIDAS['avan_ticker'], ADIDAS['boerse_name'])
+    assert stock.name == ADIDAS['name']
+    assert stock.isin == ADIDAS['isin']
+    assert stock.currency == ADIDAS['currency']
+    assert stock.boerse_name == ADIDAS['boerse_name']
+    assert stock.avan_ticker == ADIDAS['avan_ticker']
 
 
 if __name__ == "__main__":
