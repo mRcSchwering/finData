@@ -24,9 +24,9 @@ import argparse
 # TODO logger anstatt print
 
 
-facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
-                       'findata_init2', 'stock')
-facade.updateData()
+# facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
+#                        'findata_init2', 'stock')
+# facade.updateData()
 
 
 class FindataFacade(object):
@@ -39,6 +39,7 @@ class FindataFacade(object):
         self._db = DBConnector(db_name, user, host, port, password)
         self._schema = Schema(schema_name, stock_table, self._db)
         self._stock = Stock(self._db, self._schema)
+        self._history = None
 
     def insertStock(self, name, isin, currency, boerse_name, avan_ticker):
         """
@@ -69,6 +70,16 @@ class FindataFacade(object):
         """
         print('\tin updateSingleStock')
         self._history = History(self._schema, self._stock)
+        for table in [tab for tab in self._schema.tables if tab != self._schema.stock_table]:
+            print('table: %s' % table)
+            self._history.table(table)
+            rate = self._history.update_rate
+            print('\tUpdate rate is: %s' % rate)
+            print('\tLast update was: %s' % self._history.last_update)
+            if rate == 'daily':
+                print('\t%s days missing' % self._history.days_missing)
+            else:
+                print('\t%s years missing' % self._history.years_missing)
 
 
 if __name__ == "__main__":
