@@ -166,31 +166,31 @@ class isNewForYears(unittest.TestCase):
 
     def test_neitherDateNorIntGiven(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         with self.assertRaises(ValueError):
             self.hist.isNew('asd')
 
     def test_newDayButSameYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(dt.date(2018, 1, 10))
         self.assertFalse(res)
 
     def test_newDayAndYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(dt.date(2019, 1, 10))
         self.assertTrue(res)
 
     def test_sameYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(2018)
         self.assertFalse(res)
 
     def test_newYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(2019)
         self.assertTrue(res)
 
@@ -205,42 +205,42 @@ class isNewForDays(unittest.TestCase):
 
     def test_giveYearToDaily(self):
         self.hist.table('tab_daily')
-        self.hist._table.update_rate = 'daily'
+        self.hist.update_rate = 'daily'
         with self.assertRaises(ValueError):
             self.hist.isNew(2018)
 
     def test_newDayButSameYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(dt.date(2018, 1, 10))
         self.assertFalse(res)
 
     def test_newDayAndYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(dt.date(2019, 1, 10))
         self.assertTrue(res)
 
     def test_currentYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(2018)
         self.assertFalse(res)
 
     def test_newYearForYearlyUpdates(self):
         self.hist.table('tab_yearly')
-        self.hist._table.update_rate = 'yearly'
+        self.hist.update_rate = 'yearly'
         res = self.hist.isNew(2019)
         self.assertTrue(res)
 
     def test_newDayForDailyUpdates(self):
         self.hist.table('tab_daily')
-        self.hist._table.update_rate = 'daily'
+        self.hist.update_rate = 'daily'
         res = self.hist.isNew(dt.date(2018, 1, 10))
         self.assertTrue(res)
 
     def test_sameDayForDailyUpdates(self):
         self.hist.table('tab_daily')
-        self.hist._table.update_rate = 'daily'
+        self.hist.update_rate = 'daily'
         res = self.hist.isNew(dt.date(2018, 1, 1))
         self.assertFalse(res)

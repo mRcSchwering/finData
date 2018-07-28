@@ -24,6 +24,11 @@ import argparse
 # TODO logger anstatt print
 
 
+facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
+                       'findata_init2', 'stock')
+facade.updateData()
+
+
 class FindataFacade(object):
     """
     Providing interface to main module functions
@@ -34,7 +39,6 @@ class FindataFacade(object):
         self._db = DBConnector(db_name, user, host, port, password)
         self._schema = Schema(schema_name, stock_table, self._db)
         self._stock = Stock(self._db, self._schema)
-        self._history = History(self._schema, self._stock)
 
     def insertStock(self, name, isin, currency, boerse_name, avan_ticker):
         """
@@ -46,10 +50,13 @@ class FindataFacade(object):
         """
         Bring data for each stock symbol in database up to todays date
         """
-        isins = self._getAllStockISINs()
+        isins = self._schema.getISINs()
+        if isins is None or len(isins) < 1:
+            print('No stock symbol in database ...done')
+            return True
         n = len(isins)
-        for isin in range(n):
-            self._stock.exists(isin)
+        for i in range(n):
+            self._stock.exists(isins[i])
             print("\n[{i}/{n}]\tUpdating {name} ({isin})..."
                   .format(i=i+1, n=n, name=self._stock.name, isin=self._stock.isin))
             self.updateSingleStock()
@@ -60,18 +67,8 @@ class FindataFacade(object):
         """
         Bring data for a single stock symbol up to todays date
         """
-        date_today = self._getDateToday()
-        self._request(self._stock, self.update_limit)
-        table_names = ['divid_yearly', 'fundamental_yearly', 'hist_daily']
-        for table_name in table_names:
-            table = self._schema.table(table_name)
-            update_rate = table.update_rate
-            latest_update = table.latestUpdate()
-            self._request.table(table, update_rate, latest_update, date_today)
-
-    def _getAllStockISINs(self):
-        
-        self._db.query(query, args, fetch='all')
+        print('\tin updateSingleStock')
+        self._history = History(self._schema, self._stock)
 
 
 if __name__ == "__main__":

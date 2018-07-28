@@ -27,6 +27,7 @@ class History(object):
         self._type = None
         self.days_missing = None
         self.years_missing = None
+        self.update_rate = None
 
     def table(self, name):
         """
@@ -36,6 +37,7 @@ class History(object):
         last_update     latest timepoint for stock in this table
         days_missing    time delta between today and the last update
         years_missing   number of years bewteen today and last update
+        update_rate     update rate of selected table
         """
         if name not in self._schema.tables:
             raise ValueError(
@@ -46,6 +48,7 @@ class History(object):
         self._type = self._getType()
         self.years_missing = self._getMissingYears()
         self.days_missing = self._getMissingDays()
+        self.update_rate = self._table.update_rate
 
     def isNew(self, timepoint):
         """
@@ -56,7 +59,7 @@ class History(object):
         """
         if True not in [isinstance(timepoint, d) for d in [int, dt.date]]:
             raise ValueError('Provide year as integer or date as dt.date')
-        if self._table.update_rate == 'daily' and isinstance(timepoint, int):
+        if self.update_rate == 'daily' and isinstance(timepoint, int):
             raise ValueError('Provide date, this table has a daily update rate')
         if self._table is None:
             raise AttributeError('Set table first with "table" method')
@@ -77,9 +80,9 @@ class History(object):
                 time_delta = dt.date(timepoint, 1, 1) - dt.date(last_update, 1, 1)
                 years_delta = timepoint - last_update
 
-        if self._table.update_rate == 'yearly':
+        if self.update_rate == 'yearly':
             return years_delta > 0
-        if self._table.update_rate == 'daily':
+        if self.update_rate == 'daily':
             return time_delta > dt.timedelta(0)
         raise ArithmeticError('Something went wrong in comparing timepoints')
 
