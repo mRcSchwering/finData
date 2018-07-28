@@ -1,14 +1,9 @@
 # This Python file uses the following encoding: utf-8
-from finData.connect import Connector
+from finData.dbconnector import DBConnector
+from finData.schema import Schema
+from finData.stock import Stock
+from finData.history import History
 import argparse
-
-# TODO testdata updaten
-# stock der nciht existet (also einen vorhalten)
-# stock mit daten, die aktuell sind
-# stock mit daten die alt sind
-# stock ohne daten
-
-# TODO TODOs in timeline.py
 
 # TODO Klasse 'Request' als adapter für 'BoerseScraper' und 'AlphaREST'
 # mit 'table()' für Tabellen Namen wird entsprechende Methode benutzt in
@@ -34,21 +29,18 @@ class FindataFacade(object):
     Providing interface to main module functions
     """
 
-    # update limit in years (going into the past from today)
-    update_limit = 20
-
     def __init__(self, db_name, user, host, port,
                  password, schema_name, stock_table):
         self._db = DBConnector(db_name, user, host, port, password)
         self._schema = Schema(schema_name, stock_table, self._db)
         self._stock = Stock(self._db, self._schema)
+        self._history = History(self._schema, self._stock)
 
     def insertStock(self, name, isin, currency, boerse_name, avan_ticker):
         """
         Insert stock symbol into stocks table if it doesnt already exist
         """
-        res = self._stock.insert(name, isin, currency, avan_ticker, boerse_name)
-        return res
+        return self._stock.insert(name, isin, currency, avan_ticker, boerse_name)
 
     def updateData(self):
         """
@@ -76,6 +68,10 @@ class FindataFacade(object):
             update_rate = table.update_rate
             latest_update = table.latestUpdate()
             self._request.table(table, update_rate, latest_update, date_today)
+
+    def _getAllStockISINs(self):
+        
+        self._db.query(query, args, fetch='all')
 
 
 if __name__ == "__main__":

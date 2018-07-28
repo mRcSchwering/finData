@@ -82,6 +82,39 @@ class GetTablesPatched(unittest.TestCase):
         self.assertEqual(calls[0][1][1], {'schema': 'schema_name'})
 
 
+class GetISINs(unittest.TestCase):
+
+    def setUp(self):
+        db = MagicMock()
+        db.query = MagicMock(return_value=INFO_SCHEMA.to_dict())
+        self.S = patchGetTables(['schema_name', 'stock', db])
+
+    def test_NoISINsReturnsNone(self):
+        db = MagicMock()
+        db.query = MagicMock(return_value=None)
+        self.S._db = db
+        self.assertIsNone(self.S.getISINs())
+
+    def test_ISINSreturned(self):
+        db = MagicMock()
+        db.query = MagicMock(return_value=[('a',), ('b',)])
+        self.S._db = db
+        self.assertEqual(self.S.getISINs(), ['a', 'b'])
+
+    def test_correctCursorCalls(self):
+        db = MagicMock()
+        db.query = MagicMock(return_value=[('a',), ('b',)])
+        self.S._db = db
+        res = self.S.getISINs()
+        calls = self.S._db.method_calls
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0], 'query')
+        exp = """SELECT isin FROM schema_name.stock"""
+        self.assertEqual(calls[0][1][0], exp)
+        self.assertEqual(calls[0][1][1], {})
+        self.assertEqual(calls[0][1][2], 'all')
+
+
 class SchemaInitErrors(unittest.TestCase):
 
     def setUp(self):

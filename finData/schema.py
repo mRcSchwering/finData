@@ -11,6 +11,7 @@ class Schema(object):
     table       table names in schema
 
     table       create table object
+    getISINs    get all stock ISINs
     """
 
     def __init__(self, name, stock_table, db):
@@ -40,6 +41,14 @@ class Schema(object):
         df = df.loc[df['table_name'] == name]
         df = df.sort_values(by=['ordinal_position'])
         return Table(name, self.stock_table, df, self.name, self._db)
+
+    def getISINs(self):
+        query = """SELECT isin FROM {schema}.{stock}""" \
+                .format(schema=self.name, stock=self.stock_table)
+        res = self._db.query(query, {}, 'all')
+        if res is not None and len(res) > 0:
+            return [d[0] for d in res]
+        return None
 
     def _getTables(self):
         query = ("""SELECT tablename FROM pg_catalog.pg_tables """
