@@ -53,8 +53,9 @@ def main(db_name, schema_name, user, host, port, password):
         raise AssertionError("UNIQUE constraint was not enforced")
 
     _log("Trying to insert doublicate stock using stock")
-    stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
-                 ADIDAS['avan_ticker'], ADIDAS['boerse_name'])
+    with catchStdout():
+        stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
+                     ADIDAS['avan_ticker'], ADIDAS['boerse_name'])
     assert stock.name == ADIDAS['name']
     assert stock.isin == ADIDAS['isin']
     assert stock.currency == ADIDAS['currency']
