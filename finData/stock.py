@@ -1,7 +1,4 @@
 # This Python file uses the following encoding: utf-8
-from psycopg2.extensions import AsIs
-
-# TODO replace AsIs?
 
 
 class Stock(object):
@@ -27,8 +24,9 @@ class Stock(object):
         """
         Get stock information by ISIN if exists in stock table
         """
-        query = """SELECT * FROM %(schema)s.stock WHERE isin = %(isin)s"""
-        args = {'schema': AsIs(self._schema.name), 'isin': isin}
+        query = """SELECT * FROM {schema}.stock WHERE isin = %(isin)s""" \
+                .format(schema=self._schema.name)
+        args = {'isin': isin}
         res = self._db.query(query, args, fetch='one')
         if res is None or len(res) < 1:
             return False

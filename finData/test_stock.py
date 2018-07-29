@@ -51,9 +51,8 @@ class ExistsReturningNone(unittest.TestCase):
     def test_correctQuery(self):
         calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
-        exp_query = 'SELECT * FROM %(schema)s.stock WHERE isin = %(isin)s'
+        exp_query = 'SELECT * FROM schema_name.stock WHERE isin = %(isin)s'
         self.assertEqual(calls[0][1][0], exp_query)
-        self.assertEqual(type(calls[0][1][1]['schema']).__name__, 'AsIs')
         self.assertEqual(calls[0][1][1]['isin'], 'someISIN')
         self.assertEqual(calls[0][2], {'fetch': 'one'})
 
@@ -79,9 +78,8 @@ class ExistsReturningEmpty(unittest.TestCase):
     def test_correctQuery(self):
         calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
-        exp_query = 'SELECT * FROM %(schema)s.stock WHERE isin = %(isin)s'
+        exp_query = 'SELECT * FROM schema_name.stock WHERE isin = %(isin)s'
         self.assertEqual(calls[0][1][0], exp_query)
-        self.assertEqual(type(calls[0][1][1]['schema']).__name__, 'AsIs')
         self.assertEqual(calls[0][1][1]['isin'], 'someISIN')
         self.assertEqual(calls[0][2], {'fetch': 'one'})
 
@@ -108,9 +106,8 @@ class ExistsReturningStockInfo(unittest.TestCase):
     def test_correctQuery(self):
         calls = self.S._db.query.mock_calls
         self.assertEqual(len(calls), 1)
-        exp_query = 'SELECT * FROM %(schema)s.stock WHERE isin = %(isin)s'
+        exp_query = 'SELECT * FROM schema_name.stock WHERE isin = %(isin)s'
         self.assertEqual(calls[0][1][0], exp_query)
-        self.assertEqual(type(calls[0][1][1]['schema']).__name__, 'AsIs')
         self.assertEqual(calls[0][1][1]['isin'], 'someISIN')
         self.assertEqual(calls[0][2], {'fetch': 'one'})
 
