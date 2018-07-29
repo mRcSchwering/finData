@@ -70,8 +70,8 @@ def main(db_name, schema_name, user, host, port, password):
     _log('Checking fundamental_yearly table history')
     history.table('fundamental_yearly')
     assert history.update_rate == 'yearly'
-    assert history.last_update == int(2017)
-    assert history.years_missing == int(1)
+    assert history.last_update == 2017
+    assert history.years_missing == 1
 
     _log('Checking divid_yearly table history')
     history.table('divid_yearly')
