@@ -46,20 +46,6 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s finData -v -p "*test_history*"
 
-  unittest-scraper:
-    docker:
-      - image: mrcschwering/cci-findata_build:latest
-    working_directory: /app
-    steps:
-      - run: python3 -m unittest discover -s finData -v -p "*test_scrape*"
-
-  unittest-connector:
-    docker:
-      - image: mrcschwering/cci-findata_build:latest
-    working_directory: /app
-    steps:
-      - run: python3 -m unittest discover -s finData -v -p "*test_connect*"
-
   integration-tests:
     docker:
       - image: mrcschwering/docker-compose-git:latest
@@ -126,12 +112,6 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - unittest-scraper:
-          requires:
-            - build
-      - unittest-connector:
-          requires:
-            - build
       - unittest-dbconnector:
           requires:
             - build
@@ -146,8 +126,6 @@ workflows:
             - build
       - integration-tests:
           requires:
-            - unittest-scraper
-            - unittest-connector
             - unittest-dbconnector
             - unittest-schema
             - unittest-stock

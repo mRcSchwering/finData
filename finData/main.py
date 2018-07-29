@@ -24,9 +24,9 @@ import argparse
 # TODO logger anstatt print
 
 
-# facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
-#                        'findata_init2', 'stock')
-# facade.updateData()
+facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
+                       'findata_init2', 'stock')
+facade.updateData()
 
 
 class FindataFacade(object):
@@ -69,7 +69,7 @@ class FindataFacade(object):
         Bring data for a single stock symbol up to todays date
         """
         print('\tin updateSingleStock')
-        self._history = History(self._schema, self._stock)
+        self._history = History(self._schema, self._stock._id)
         for table in [tab for tab in self._schema.tables if tab != self._schema.stock_table]:
             print('table: %s' % table)
             self._history.table(table)

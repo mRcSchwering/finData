@@ -12,12 +12,10 @@ class History(object):
     isNew   test if a given time point is new
     """
 
-    #update limit in years
+    # update limit in years
     limit = 20
 
     def __init__(self, schema, stock_id):
-        #if stock._id is None:
-        #    raise AttributeError('Set Stock object first with "exists" method')
         self._schema = schema
         self.stock_id = stock_id
         self.today = dt.date.today()

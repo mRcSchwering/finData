@@ -2,8 +2,10 @@
 from finData.dbconnector import DBConnector
 from finData.schema import Schema
 from finData.stock import Stock
+from finData.history import History
 from psycopg2.extensions import AsIs
 import psycopg2 as pg
+import datetime as dt
 import argparse
 import sys
 import io
@@ -54,13 +56,38 @@ def main(db_name, schema_name, user, host, port, password):
 
     _log("Trying to insert doublicate stock using stock")
     with catchStdout():
-        stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
-                     ADIDAS['avan_ticker'], ADIDAS['boerse_name'])
+        res = stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
+                           ADIDAS['avan_ticker'], ADIDAS['boerse_name'])
+    assert res is False
     assert stock.name == ADIDAS['name']
     assert stock.isin == ADIDAS['isin']
     assert stock.currency == ADIDAS['currency']
     assert stock.boerse_name == ADIDAS['boerse_name']
     assert stock.avan_ticker == ADIDAS['avan_ticker']
+
+    _log('Creating db history of stock')
+    history = History(schema, stock._id)
+    history.today = dt.date(2018, 7, 29)
+
+    _log('Checking fundamental_yearly table history')
+    history.table('fundamental_yearly')
+    assert history.update_rate == 'yearly'
+    assert history.last_update == 2017
+    assert history.years_missing == 1
+
+    _log('Checking divid_yearly table history')
+    history.table('divid_yearly')
+    assert history.update_rate == 'yearly'
+    assert history.last_update == dt.date(2018, 5, 10)
+    assert history.years_missing == 0
+
+    _log('Checking hist_daily table history')
+    history.table('hist_daily')
+    assert history.update_rate == 'daily'
+    assert history.last_update == dt.date(2018, 5, 16)
+    assert history.days_missing == dt.timedelta(74)
+
+    _log('All good')
 
 
 if __name__ == "__main__":
