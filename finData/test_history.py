@@ -22,10 +22,10 @@ class HistorySetup(unittest.TestCase):
     def setUp(self):
         self.schema = MagicMock()
         self.stock = MagicMock()
-        self.stock._id = 1
+        self.stock_id = 1
 
     def test_initialNones(self):
-        hist = History(self.schema, self.stock)
+        hist = History(self.schema, self.stock_id)
         self.assertIsNone(hist._table)
         self.assertIsNone(hist.last_update)
         self.assertIsNone(hist._type)
@@ -34,43 +34,38 @@ class HistorySetup(unittest.TestCase):
         self.assertIsNone(hist.name)
 
     def test_dateIsSet(self):
-        hist = History(self.schema, self.stock)
+        hist = History(self.schema, self.stock_id)
         self.assertEqual(hist.today, dt.date.today())
-
-    def test_errorIfStockUnset(self):
-        self.stock._id = None
-        with self.assertRaises(AttributeError):
-            hist = History(self.schema, self.stock)
 
 
 class TableHistories(unittest.TestCase):
 
     def setUp(self):
         self.stock = MagicMock()
-        self.stock._id = 1
+        self.stock_id = 1
 
     def test_mockingSchemaWorks(self):
         schema = mockSchema(2017, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.table('tab_daily')
         self.assertEqual(hist.last_update, 2017)
         self.assertEqual(hist.name, 'tab_daily')
 
     def test_tableNotInSchema(self):
         schema = mockSchema(2017, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         with self.assertRaises(ValueError):
             hist.table('wrong_table')
 
     def test_unclearColumnType(self):
         schema = mockSchema(2017, 'unclear_type')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         with self.assertRaises(AttributeError):
             hist.table('tab_daily')
 
     def test_switchingTablesWorks(self):
         schema = mockSchema(2018, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2018, 1, 10)
         hist.table('tab_daily')
         self.assertEqual(hist.name, 'tab_daily')
@@ -84,19 +79,19 @@ class TableHistories(unittest.TestCase):
 
     def test_recognizeDateType(self):
         schema = mockSchema(dt.date(1990, 1, 1), 'date')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.table('tab_daily')
         self.assertEqual(hist._type, 'date')
 
     def test_recognizeYearType(self):
         schema = mockSchema(2017, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.table('tab_daily')
         self.assertEqual(hist._type, 'year')
 
     def test_missingYearsWithDate(self):
         schema = mockSchema(dt.date(2017, 1, 1), 'date')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2017, 1, 1)
         hist.table('tab_daily')
         self.assertEqual(hist.years_missing, 0)
@@ -106,7 +101,7 @@ class TableHistories(unittest.TestCase):
 
     def test_missingYearsWithYear(self):
         schema = mockSchema(2017, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2017, 1, 1)
         hist.table('tab_daily')
         self.assertEqual(hist.years_missing, 0)
@@ -116,7 +111,7 @@ class TableHistories(unittest.TestCase):
 
     def test_missingDaysWithDate(self):
         schema = mockSchema(dt.date(2018, 1, 1), 'date')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2018, 1, 10)
         hist.table('tab_daily')
         self.assertEqual(hist.days_missing, dt.timedelta(9))
@@ -126,7 +121,7 @@ class TableHistories(unittest.TestCase):
 
     def test_missingDaysWithYear(self):
         schema = mockSchema(2018, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2018, 1, 30)
         hist.table('tab_daily')
         self.assertEqual(hist.days_missing, dt.timedelta(29))
@@ -136,7 +131,7 @@ class TableHistories(unittest.TestCase):
 
     def test_noEntriesInTableYet(self):
         schema = mockSchema(None, 'integer')
-        hist = History(schema, self.stock)
+        hist = History(schema, self.stock_id)
         hist.today = dt.date(2018, 1, 1)
         hist.table('tab_daily')
         self.assertEqual(hist.years_missing, 20)
@@ -147,9 +142,8 @@ class isNewSetup(unittest.TestCase):
 
     def setUp(self):
         stock = MagicMock()
-        stock._id = 1
         schema = MagicMock()
-        self.hist = History(schema, stock)
+        self.hist = History(schema, 1)
 
     def test_noTableSet(self):
         with self.assertRaises(AttributeError):
@@ -160,9 +154,8 @@ class isNewForYears(unittest.TestCase):
 
     def setUp(self):
         stock = MagicMock()
-        stock._id = 1
         schema = mockSchema(2018, 'integer')
-        self.hist = History(schema, stock)
+        self.hist = History(schema, 1)
 
     def test_neitherDateNorIntGiven(self):
         self.hist.table('tab_yearly')
@@ -199,9 +192,8 @@ class isNewForDays(unittest.TestCase):
 
     def setUp(self):
         stock = MagicMock()
-        stock._id = 1
         schema = mockSchema(dt.date(2018, 1, 1), 'date')
-        self.hist = History(schema, stock)
+        self.hist = History(schema, 1)
 
     def test_giveYearToDaily(self):
         self.hist.table('tab_daily')

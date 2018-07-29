@@ -15,11 +15,11 @@ class History(object):
     #update limit in years
     limit = 20
 
-    def __init__(self, schema, stock):
-        if stock._id is None:
-            raise AttributeError('Set Stock object first with "exists" method')
+    def __init__(self, schema, stock_id):
+        #if stock._id is None:
+        #    raise AttributeError('Set Stock object first with "exists" method')
         self._schema = schema
-        self._stock = stock
+        self.stock_id = stock_id
         self.today = dt.date.today()
         self._table = None
         self.last_update = None
@@ -87,7 +87,7 @@ class History(object):
         raise ArithmeticError('Something went wrong in comparing timepoints')
 
     def _getLastUpdate(self):
-        return self._table.lastUpdate(self._stock._id)
+        return self._table.lastUpdate(self.stock_id)
 
     def _getType(self):
         typ = self._table.column(self._table.time_column).type
