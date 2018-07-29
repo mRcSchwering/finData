@@ -3,13 +3,11 @@ from finData.dbconnector import DBConnector
 from finData.schema import Schema
 from finData.stock import Stock
 from finData.history import History
-from psycopg2.extensions import AsIs
 import psycopg2 as pg
 import datetime as dt
 import argparse
 import sys
 import io
-import re
 
 
 # used several times

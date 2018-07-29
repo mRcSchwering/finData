@@ -24,9 +24,9 @@ import argparse
 # TODO logger anstatt print
 
 
-facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
-                       'findata_init2', 'stock')
-facade.updateData()
+# facade = FindataFacade('findata_test', 'postgres', 'localhost', 5432, '',
+#                        'findata_init2', 'stock')
+# facade.updateData()
 
 
 class FindataFacade(object):
@@ -84,24 +84,18 @@ class FindataFacade(object):
 
 if __name__ == "__main__":
 
-    # TODO die hier würden mit FindataFacade laufen
-
     parser = argparse.ArgumentParser(
-        description='INSERTing and SELECTing methods',
+        description='Program for finData database',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers()
 
     def fun_insert(args):
-        connector = Connector(args.db_name, args.db_schema, args.user,
-                              args.host, args.port, args.password)
-        connector.insertStock(args.name, args.ISIN, args.WKN, args.type,
-                              args.currency, args.boerse_name, args.avan_ticker)
+        print('fun_insert called')
+        return None
 
     def fun_update(args):
-        print('updating')
-        connector = Connector(args.db_name, args.db_schema, args.user,
-                              args.host, args.port, args.password)
-        connector.updateData()
+        print('fun_update called')
+        return None
 
     # main parser for connection
     parser.add_argument(
@@ -125,17 +119,13 @@ if __name__ == "__main__":
         'insert', help='Insert new stock symbol into database')
     parser_insert.add_argument('name', type=str, help='stock name')
     parser_insert.add_argument('ISIN', type=str, help='ISIN of stock')
-    parser_insert.add_argument('WKN', type=str, help='WKN of stock')
     parser_insert.add_argument(
-        'currency', type=str, choices=currencies, help='traded currency')
+        'currency', type=str, help='traded currency (EUR, USD,...)')
     parser_insert.add_argument(
         'boerse_name', type=str,
         help='Name used by boerse.de to request data for this stock')
     parser_insert.add_argument(
         'avan_ticker', type=str, help='Ticker as used by alphavantage API')
-    parser_insert.add_argument(
-        '--type', dest='type', type=str, help='Currently unused',
-        default='Aktie')
     parser_insert.set_defaults(func=fun_insert)
 
     # TODO insert_csv parser
