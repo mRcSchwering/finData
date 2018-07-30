@@ -44,6 +44,17 @@ def main(db_name, schema_name, user, host, port, password):
     res = db.query(query, {}, 'all')
     assert len(res) == 7
 
+    _log('Check testdata using DBConnector')
+    query = """SELECT COUNT(*) FROM {}.fundamental_yearly""".format(schema_name)
+    res = db.query(query, {}, 'one')
+    assert res[0] == 54
+    query = """SELECT COUNT(*) FROM {}.divid_yearly""".format(schema_name)
+    res = db.query(query, {}, 'one')
+    assert res[0] == 186
+    query = """SELECT COUNT(*) FROM {}.hist_daily""".format(schema_name)
+    res = db.query(query, {}, 'one')
+    assert res[0] == 700
+
     _log("Trying to insert doublicate stock using schema")
     try:
         schema.table('stock').insertRow(ADIDAS)
@@ -52,7 +63,21 @@ def main(db_name, schema_name, user, host, port, password):
     else:
         raise AssertionError("UNIQUE constraint was not enforced")
 
-    _log("Trying to insert doublicate stock using stock")
+    _log('Getting stock id for adidas using DBConnector')
+    query = """SELECT id FROM {}.stock WHERE isin = %(isin)s""".format(schema_name)
+    res = db.query(query, {'isin': ADIDAS['isin']}, 'one')
+    adidas_id = res[0]
+    assert isinstance(adidas_id, int)
+
+    _log('Checking last table updates for adidas using schema')
+    res = schema.table('fundamental_yearly').lastUpdate(adidas_id)
+    assert res == 2017
+    res = schema.table('divid_yearly').lastUpdate(adidas_id)
+    assert res == dt.date(2018, 5, 10)
+    res = schema.table('hist_daily').lastUpdate(adidas_id)
+    assert res == dt.date(2018, 5, 16)
+
+    _log("Trying to insert doublicate stock using stock, stock should be set")
     with catchStdout():
         res = stock.insert(ADIDAS['name'], ADIDAS['isin'], ADIDAS['currency'],
                            ADIDAS['avan_ticker'], ADIDAS['boerse_name'])

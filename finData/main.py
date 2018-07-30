@@ -5,6 +5,9 @@ from finData.stock import Stock
 from finData.history import History
 import argparse
 
+# TODO None Fehler analysieren
+# manchmal ist in integration test history.last_update None... kA wieso
+
 # TODO Klasse 'Request' als adapter für 'BoerseScraper' und 'AlphaREST'
 # mit 'table()' für Tabellen Namen wird entsprechende Methode benutzt in
 # 'Boerse*' oder 'Alpha*' um Daten zu kriegen requesten/scrapen
