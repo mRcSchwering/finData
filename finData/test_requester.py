@@ -8,10 +8,25 @@ class RequesterSetup(unittest.TestCase):
     def setUp(self):
         stock = MagicMock()
         self.req = Requester(stock)
+        self.hist = MagicMock()
+        self.tab = MagicMock()
 
     def test_unknowntable(self):
-        hist = MagicMock()
-        tab = MagicMock()
-        tab.name = 'unknown_table'
+        self.tab.name = 'unknown_table'
         with self.assertRaises(AttributeError):
-            self.req.table(tab, hist)
+            self.req.table(self.tab, self.hist)
+
+    def test_fund(self):
+        self.tab.name = 'fundamental_yearly'
+        self.req.table(self.tab, self.hist)
+        self.assertEqual(self.req.data, 'fund')
+
+    def test_divid(self):
+        self.tab.name = 'divid_yearly'
+        self.req.table(self.tab, self.hist)
+        self.assertEqual(self.req.data, 'divid')
+
+    def test_hist(self):
+        self.tab.name = 'hist_daily'
+        self.req.table(self.tab, self.hist)
+        self.assertEqual(self.req.data, 'hist')
