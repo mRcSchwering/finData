@@ -1,5 +1,7 @@
 # This Python file uses the following encoding: utf-8
+from psycopg2.extensions import AsIs
 import pandas as pd
+import numpy as np
 
 
 class Schema(object):
@@ -116,6 +118,9 @@ class Table(object):
         vals = [row[k] for k in row]
         if set(vals) == set([None]):
             return False
+        for k in row:
+            if not isinstance(row[k], str) and np.isnan(row[k]):
+                row[k] = AsIs('NULL')
         self._db.query(query, row)
         return True
 

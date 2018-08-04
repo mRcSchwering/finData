@@ -1,6 +1,7 @@
 from finData.schema import Schema
 from finData.testing_utils import *
 import pandas as pd
+import numpy as np
 
 
 # load test info schema
@@ -299,6 +300,18 @@ class InsertRowIntoTable(unittest.TestCase):
         row = {c: None for c in self.cols[1:]}
         res = self.T.insertRow(row)
         self.assertFalse(res)
+
+    def test_insertNaNs(self):
+        row = {c: c for c in self.cols[1:]}
+        row['name'] = np.nan
+        res = self.T.insertRow(row)
+        self.assertTrue(res)
+        calls = self.T._db.query.mock_calls
+        self.assertEqual(len(calls), 2)
+        call = calls[1]
+        exp = """INSERT INTO schema_name.stock (name,isin) VALUES (%(name)s,%(isin)s)"""
+        self.assertEqual(call[1][0], exp)
+        self.assertEqual(type(call[1][1]['name']).__name__, 'AsIs')
 
 
 class GetLastTableUpdate(unittest.TestCase):
