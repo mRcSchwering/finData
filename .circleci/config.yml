@@ -60,6 +60,13 @@ jobs:
     steps:
       - run: python3 -m unittest discover -s finData -v -p "*test_boersescraper*"
 
+  unittest-dividscraper:
+    docker:
+      - image: mrcschwering/cci-findata_build:latest
+    working_directory: /app
+    steps:
+      - run: python3 -m unittest discover -s finData -v -p "*test_dividscraper*"
+
   integration-tests:
     docker:
       - image: mrcschwering/docker-compose-git:latest
@@ -144,6 +151,9 @@ workflows:
       - unittest-boersescraper:
           requires:
             - build
+      - unittest-dividscraper:
+          requires:
+            - build
       - integration-tests:
           requires:
             - unittest-dbconnector
@@ -152,6 +162,7 @@ workflows:
             - unittest-history
             - unittest-requester
             - unittest-boersescraper
+            - unittest-dividscraper
       - deploy:
           requires:
             - integration-tests

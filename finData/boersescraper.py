@@ -2,12 +2,8 @@
 from bs4 import BeautifulSoup
 import datetime as dt
 import pandas as pd
-import os
-import re
-import json
 import requests
-
-# TODO _htmlTab2dict testen
+import re
 
 
 class BoerseScraper(object):
@@ -16,10 +12,6 @@ class BoerseScraper(object):
     """
 
     host = 'www.boerse.de'
-
-    # column type conversions
-    date_columns = ['datum']
-    int_columns = ['year']
 
     def __init__(self, boerse_name, isin):
         self._isin = isin
@@ -131,7 +123,6 @@ class BoerseScraper(object):
         """
         Recursively guess and convert types in obj of dicts and lists
         """
-
         def guessValue(obj):
             if obj in NaN_strs:
                 return float('NaN')
@@ -170,3 +161,39 @@ class BoerseScraper(object):
             obj = guessValue(obj)
 
         return obj
+
+    @classmethod
+    def _table2DataFrame(cls, table, mapping, transpose=False):
+        """
+        Convert table into DataFrame using a mapping
+
+        Mapping is list of dicts with each 'from', 'to', 'type'.
+        DataFrame columns are renamed 'from', 'to', then converted to 'type':
+        'int', 'num', 'str', 'other' (is left as is).
+
+        Names not appearing in mapping are not included in dataframe.
+
+        Optional transposition happens before other conversions.
+        """
+        rownames = table.get('rownames')
+        colnames = table.get('colnames')
+        data = table.get('data')
+        df = pd.DataFrame(data, index=rownames, columns=colnames)
+        if transpose:
+            df = df.T
+        old_colnames = [c['from'] for c in mapping]
+        df = df[old_colnames]
+        new_colnames = []
+        for old in old_colnames:
+            new = [c['to'] for c in mapping if c['from'] == old]
+            new_colnames.append(new[0])
+        df.columns = new_colnames
+        for col in df.columns:
+            types = [c['type'] for c in mapping if c['to'] == col]
+            if types[0] == 'int':
+                df[col] = df[col].astype(int)
+            if types[0] == 'num':
+                df[col] = df[col].astype(float)
+            if types[0] == 'str':
+                df[col] = df[col].astype(str)
+        return df

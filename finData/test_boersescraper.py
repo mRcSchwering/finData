@@ -205,6 +205,106 @@ class GuessTypes(unittest.TestCase):
         self.assertEqual(type(self.res['data'][0][1]).__name__, 'int')
 
 
+class Table2DataFrameDefaults(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        test = {
+            'colnames': ['col3', 'col2', 'col1', 'col4', 'col5'],
+            'rownames': ['row1', 'row2', 'row3'],
+            'data': [
+                [2009, 1.12, '1', dt.date(2010, 1, 1), ''],
+                [2010, 2.00, '2', dt.date(2010, 1, 1), ''],
+                [2011, 0.03, '3', dt.date(2010, 1, 1), '']
+            ]
+        }
+        mapping = [
+            {'from': 'col1', 'to': 'Col3', 'type': 'int'},
+            {'from': 'col2', 'to': 'Col2', 'type': 'num'},
+            {'from': 'col3', 'to': 'Col1', 'type': 'str'},
+            {'from': 'col4', 'to': 'Col4', 'type': 'other'}
+        ]
+        s = BoerseScraper(*dummy)
+        cls.res = s._table2DataFrame(test, mapping)
+
+    def test_correctShape(self):
+        self.assertEqual(self.res.shape[0], 3)
+        self.assertEqual(self.res.shape[1], 4)
+
+    def test_correctTypes(self):
+        self.assertEqual(self.res['Col3'].dtype.name, 'int64')
+        self.assertEqual(self.res['Col2'].dtype.name, 'float64')
+        self.assertEqual(self.res['Col1'].dtype.name, 'object')
+        self.assertEqual(self.res['Col4'].dtype.name, 'object')
+
+    def test_correctColnames(self):
+        exp = ['Col3', 'Col2', 'Col1', 'Col4']
+        self.assertEqual(self.res.columns.tolist(), exp)
+
+
+class Table2DataFrameSpecialCases(unittest.TestCase):
+
+    def test_transposeTable(self):
+        test = {
+            'colnames': ['col1', 'col2'],
+            'rownames': ['row1', 'row2', 'row3'],
+            'data': [
+                [2009, 2010],
+                [1.11, 2.22],
+                [1, 2]
+            ]
+        }
+        mapping = [
+            {'from': 'row1', 'to': 'Row1', 'type': 'int'},
+            {'from': 'row2', 'to': 'Row2', 'type': 'num'},
+            {'from': 'row3', 'to': 'Row3', 'type': 'str'}
+        ]
+        s = BoerseScraper(*dummy)
+        res = s._table2DataFrame(test, mapping, transpose=True)
+        self.assertEqual(res.columns.tolist(), ['Row1', 'Row2', 'Row3'])
+        self.assertEqual(res['Row1'].tolist(), [2009, 2010])
+        self.assertEqual(res['Row2'].tolist(), [1.11, 2.22])
+        self.assertEqual(res['Row3'].tolist(), ['1.0', '2.0'])
+        self.assertEqual(res.index.tolist(), ['col1', 'col2'])
+
+    def test_noRownames(self):
+        test = {
+            'colnames': ['col1', 'col2'],
+            'data': [
+                [2009, 1.11],
+                [2010, 2.22]
+            ]
+        }
+        mapping = [
+            {'from': 'col1', 'to': 'Col1', 'type': 'int'},
+            {'from': 'col2', 'to': 'Col2', 'type': 'num'}
+        ]
+        s = BoerseScraper(*dummy)
+        res = s._table2DataFrame(test, mapping)
+        self.assertEqual(res.columns.tolist(), ['Col1', 'Col2'])
+        self.assertEqual(res['Col1'].tolist(), [2009, 2010])
+        self.assertEqual(res['Col2'].tolist(), [1.11, 2.22])
+        self.assertEqual(res.index.tolist(), [0, 1])
+
+    def test_transposeAndNoColnames(self):
+        test = {
+            'rownames': ['row1', 'row2'],
+            'data': [
+                [2009, 2010],
+                [1.11, 2.22]
+            ]
+        }
+        mapping = [
+            {'from': 'row1', 'to': 'Row1', 'type': 'int'},
+            {'from': 'row2', 'to': 'Row2', 'type': 'num'}
+        ]
+        s = BoerseScraper(*dummy)
+        res = s._table2DataFrame(test, mapping, transpose=True)
+        self.assertEqual(res.columns.tolist(), ['Row1', 'Row2'])
+        self.assertEqual(res['Row1'].tolist(), [2009, 2010])
+        self.assertEqual(res['Row2'].tolist(), [1.11, 2.22])
+        self.assertEqual(res.index.tolist(), [0, 1])
+
 #
 # class HTMLtab2dict(unittest.TestCase):
 #
