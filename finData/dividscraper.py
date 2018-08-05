@@ -26,7 +26,8 @@ class DividScraper(BoerseScraper):
     def _getData(self):
         html_tables = self._getHTMLTables(self.html_search, self._url)
         btable = self._htmlTab2dict(html_tables[html_search], hasRownames=False)
-        return btable
+        table = self._decode(btable)
+        return table
 
 
     # def getTable(self, text='Dividenden'):

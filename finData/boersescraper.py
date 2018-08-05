@@ -113,3 +113,60 @@ class BoerseScraper(object):
         elif isinstance(obj, bytes):
             obj = obj.decode()
         return obj
+
+    @classmethod
+    def _guessTypes(cls, obj,
+                    str_list_keys=['colnames', 'rownames'],
+                    NaN_strs=['n.v.', '', '%', '-', '-%'],
+                    perc_regexs=['(^.*)%$'],
+                    num_regexs=['^-?[0-9.]*,[0-9][0-9]*$'],
+                    int_regexs=['^-?[0-9]*$', '^-?[0-9]*(\.[0-9]{3})+$'],
+                    dates=[{
+                            'regex': '^[0-9]{2}.[0-9]{2}.[0-9]{2}$',
+                            'format': '%d.%m.%y'
+                        }, {
+                            'regex': '^[0-9]{2}.[0-9]{2}.[0-9]{4}$',
+                            'format': '%d.%m.%Y'
+                        }]):
+        """
+        Recursively guess and convert types in obj of dicts and lists
+        """
+
+        def guessValue(obj):
+            if obj in NaN_strs:
+                return float('NaN')
+            for regex in perc_regexs:
+                if re.search(regex, obj):
+                    x = re.search(regex, obj) \
+                        .group(1) \
+                        .replace(".", "") \
+                        .replace(',', '.')
+                    return float('NaN') if x in NaN_strs else float(x) / 100
+            for date in dates:
+                if re.search(date['regex'], obj):
+                    return dt.datetime \
+                        .strptime(obj, date['format']) \
+                        .date()
+            for regex in num_regexs:
+                if re.search(regex, obj):
+                    x = obj.replace(".", "").replace(',', '.')
+                    return float('NaN') if x in NaN_strs else float(x)
+            for regex in int_regexs:
+                if re.search(regex, obj):
+                    x = obj.replace(".", "")
+                    return float('NaN') if x in NaN_strs else int(x)
+            raise ValueError('Value not identified: %s' % obj)
+
+        if isinstance(obj, dict):
+            for key in obj:
+                if key in str_list_keys:
+                    obj[key] = [str(d) for d in obj[key]]
+                else:
+                    obj[key] = cls._guessTypes(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = cls._guessTypes(obj[i])
+        else:
+            obj = guessValue(obj)
+
+        return obj

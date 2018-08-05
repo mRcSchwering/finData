@@ -1,6 +1,8 @@
 # This Python file uses the following encoding: utf-8
 from finData.boersescraper import BoerseScraper
 from finData.testing_utils import *
+import datetime as dt
+import numpy as np
 
 ads = ['Adidas-Aktie', 'DE000A1EWWW0']
 bion = ['BB-Biotech-Aktie', 'CH0038389992']
@@ -149,6 +151,58 @@ class DecodeObjects(unittest.TestCase):
         self.assertEqual(type(act[2][1]).__name__, 'str')
         self.assertEqual(type(act[2][2]).__name__, 'str')
         self.assertEqual(type(act[2][3]['x']).__name__, 'str')
+
+
+class GuessTypes(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        test = {
+            'colnames': ['123', 'asd', '1.34'],
+            'rownames': ['13.03.1990', '1.34', 'asd'],
+            'data': [
+                ['2009', '2010', '10.05.2011', '10.05.11'],
+                ['10.000', '12,37%', '13%', 'n.v.'],
+                ['287,00', '2.307,00', '0,00', '-%'],
+                ['287,00', '2.307,00', '0,00', '']
+            ]
+        }
+        s = BoerseScraper(*dummy)
+        cls.res = s._guessTypes(test)
+
+    def test_stringListsCorrect(self):
+        for col in self.res['colnames']:
+            self.assertEqual(type(col).__name__, 'str')
+        for row in self.res['rownames']:
+            self.assertEqual(type(row).__name__, 'str')
+
+    def test_datesCorrect(self):
+        self.assertEqual(self.res['data'][0][2], dt.date(2011, 5, 10))
+        self.assertEqual(self.res['data'][0][3], dt.date(2011, 5, 10))
+
+    def test_percentilesCorrect(self):
+        self.assertAlmostEqual(self.res['data'][1][1], 0.1237)
+        self.assertAlmostEqual(self.res['data'][1][2], 0.13)
+
+    def test_NaNsCorrect(self):
+        self.assertTrue(np.isnan(self.res['data'][1][3]))
+        self.assertTrue(np.isnan(self.res['data'][2][3]))
+        self.assertTrue(np.isnan(self.res['data'][3][3]))
+
+    def test_numericsCorrect(self):
+        self.assertAlmostEqual(self.res['data'][1][0], 10000)
+        self.assertAlmostEqual(self.res['data'][2][0], 287)
+        self.assertAlmostEqual(self.res['data'][2][1], 2307)
+        self.assertAlmostEqual(self.res['data'][2][2], 0)
+        self.assertAlmostEqual(self.res['data'][3][0], 287)
+        self.assertAlmostEqual(self.res['data'][3][1], 2307)
+        self.assertAlmostEqual(self.res['data'][3][2], 0)
+
+    def test_integersCorrect(self):
+        self.assertEqual(self.res['data'][0][0], 2009)
+        self.assertEqual(type(self.res['data'][0][0]).__name__, 'int')
+        self.assertEqual(self.res['data'][0][1], 2010)
+        self.assertEqual(type(self.res['data'][0][1]).__name__, 'int')
 
 
 #
