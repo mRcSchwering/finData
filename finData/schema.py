@@ -132,7 +132,10 @@ class Table(object):
             raise ValueError('This table has no updates')
         query = self._getLatestUpdateStatement()
         args = {'id': stock_id}
+        print(query)
+        print(args)
         res = self._db.query(query, args, 'one')
+        print(res)
         if res is None:
             return None
         return res[0]

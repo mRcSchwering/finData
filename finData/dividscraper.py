@@ -3,9 +3,7 @@ from finData.boersescraper import BoerseScraper
 import pandas as pd
 
 
-# TODO dataframe conversion für divid
-# dann tests für divid table
-# dann an fundscraper
+# TODO das ganze für fund
 
 
 # ADS = ['Adidas-Aktie', 'DE000A1EWWW0']
