@@ -117,15 +117,40 @@ class DividHTMLtable2dict(unittest.TestCase):
         cls.tabs = cls.s._getHTMLTables(['Dividenden'], 'url')
 
     def test_defaultConversion(self):
-        d = self.s._htmlTab2dict(self.tabs['Dividenden'])
-        self.assertEqual(set(d.keys()), set(['colnames', 'rownames', 'data']))
-        self.assertEqual(d['colnames'], [b'Dividende', b'Ver\xc3\xa4nderung', b'Rendite'])
-        self.assertEqual(len(d['rownames']), 22)
-        self.assertEqual(d['rownames'][0], b'12.05.17')
-        self.assertEqual(d['rownames'][21], b'31.05.96')
+        d = self.s._htmlTab2dict(self.tabs['Dividenden'], hasRownames=False)
+        self.assertEqual(set(d.keys()), set(['colnames', 'data']))
+        self.assertEqual(d['colnames'], [b'Datum', b'Dividende', b'Ver\xc3\xa4nderung', b'Rendite'])
         self.assertEqual(len(d['data']), 22)
-        self.assertEqual(len(d['data'][0]), 3)
-        self.assertEqual(len(d['data'][21]), 3)
+        self.assertEqual(len(d['data'][0]), 4)
+        self.assertEqual(len(d['data'][21]), 4)
+
+
+class DecodeObjects(unittest.TestCase):
+
+    def setUp(self):
+        self.b = [
+            b'sth',
+            {
+                'a': ['asd', b'asd', 1],
+                'b': b'asd'
+            },
+            [b'a', b'b', b'c', {'x': b'y'}]
+        ]
+        self.s = BoerseScraper(*dummy)
+
+    def test_correctlyDecodedDummy(self):
+        act = self.s._decode(self.b)
+        self.assertEqual(type(act[0]).__name__, 'str')
+        self.assertEqual(type(act[1]['b']).__name__, 'str')
+        self.assertEqual(type(act[1]['a'][0]).__name__, 'str')
+        self.assertEqual(type(act[1]['a'][1]).__name__, 'str')
+        self.assertEqual(type(act[1]['a'][2]).__name__, 'int')
+        self.assertEqual(type(act[2][0]).__name__, 'str')
+        self.assertEqual(type(act[2][1]).__name__, 'str')
+        self.assertEqual(type(act[2][2]).__name__, 'str')
+        self.assertEqual(type(act[2][3]['x']).__name__, 'str')
+
+
 #
 # class HTMLtab2dict(unittest.TestCase):
 #

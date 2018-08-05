@@ -98,3 +98,18 @@ class BoerseScraper(object):
             if not all(d == 0 for d in diffs):
                 raise AttributeError('Data rows do not all have the same lengths')
         return out
+
+    @classmethod
+    def _decode(cls, obj):
+        """
+        Recursive decoding of objects
+        """
+        if isinstance(obj, dict):
+            for key in obj:
+                obj[key] = cls._decode(obj[key])
+        elif isinstance(obj, list):
+            for i in range(len(obj)):
+                obj[i] = cls._decode(obj[i])
+        elif isinstance(obj, bytes):
+            obj = obj.decode()
+        return obj
