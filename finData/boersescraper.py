@@ -7,15 +7,7 @@ import re
 import json
 import requests
 
-# TODO _getHTMLTable umschreiben für mehrere tables (siehe fund)
-# TODO tests dazu
 # TODO _htmlTab2dict testen
-
-
-#
-# B = BoerseScraper('Adidas-Aktie', 'DE000A1EWWW0')
-# url = B._resolve_boerse_url('dividenden')
-# tab = B._getHTMLTable('Dividenden')
 
 
 class BoerseScraper(object):
@@ -38,47 +30,21 @@ class BoerseScraper(object):
         post = self._boerse_name + '/' + self._isin
         self._url = '/'.join([pre, uri, post])
 
-    def _getHTMLTable(self, search_text, url):
+    def _getHTMLTables(self, search_texts, url):
         """
         Scrape tables from boerse.de given a list of h3 text search strings
         """
         req = self._requestURL(url)
         soup = BeautifulSoup(req, 'lxml')
-        h3 = soup.find(lambda tag: search_text in tag.text and tag.name == 'h3')
-        try:
-            table = h3.findNext('table')
-        except AttributeError:
-            raise AttributeError('Table %s not found' % search_text)
-        return table
-
-    # def getFundamentalTables(self,
-    #                          ids=['guv', 'bilanz', 'kennzahlen', 'rentabilitaet', 'personal'],
-    #                          texts=['Marktkapitalisierung']):
-    #     """Scrape fundamental data tables from boerse.de given h3 Ids or h3 text search strings"""
-    #     tabDict = {}
-    #     req = self._getTables(self.fund_url)
-    #     soup = BeautifulSoup(req, 'lxml')
-    #
-    #     for id in ids:
-    #         h3 = soup.find(
-    #             lambda tag: tag.get('id') == id and tag.name == 'h3'
-    #         )
-    #         try:
-    #             tabDict[id.lower()[:6]] = h3.findNext('table')
-    #         except AttributeError:
-    #             print('Table %s was not found' % id)
-    #     for text in texts:
-    #         h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
-    #         try:
-    #             tabDict[text.lower()[:6]] = h3.findNext('table')
-    #         except AttributeError:
-    #             print('Table %s was not found' % text)
-    #     out = {}
-    #     for key, tab in tabDict.items():
-    #         out[key] = Scraper._htmlTab2dict(tab, hasRownames=True, hasColnames=True, removeEmpty=True)
-    #     utab = Scraper._decode(out)
-    #     self.fund_tables = Scraper._guessTypes(utab)
-    #     self.existingTables.extend(self.fund_tables.keys())
+        tableDict = {}
+        for text in search_texts:
+                h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
+                try:
+                    table = h3.findNext('table')
+                except AttributeError:
+                    raise AttributeError('Table %s not found' % text)
+                tableDict[text] = table
+        return tableDict
 
     @classmethod
     def _requestURL(cls, url):
@@ -104,7 +70,7 @@ class BoerseScraper(object):
             for col in row.findAll('td')[(rownamesIdx+1):]:
                 text = col.text.replace(u'\xa0', u' ').encode('utf-8').strip()
                 thisRow.append(text)
-            if not removeEmptyRows or not all(d == '' for d in thisRow):
+            if not removeEmptyRows or not all(d in [u'', b''] for d in thisRow):
                 data.append(thisRow)
                 nonEmptyRowIdxs.append(idx + (colnamesIdx+1))
         out = {'data': data}

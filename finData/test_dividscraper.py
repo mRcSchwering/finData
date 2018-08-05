@@ -3,7 +3,6 @@ from finData.dividscraper import DividScraper
 from finData.testing_utils import *
 
 ADS = ['Adidas-Aktie', 'DE000A1EWWW0']
-
 with open('finData/testdata/divid.html') as inf:
     TESTDATA = inf.read()
 
@@ -23,9 +22,10 @@ class ScraperSetup(unittest.TestCase):
         exp = 'https://www.boerse.de/dividenden/Adidas-Aktie/DE000A1EWWW0'
         self.assertEqual(self.a._url, exp)
 
-    def test_HTMLtableFound(self):
-        self.assertEqual(len(self.a._html_table), 46)
-        self.assertEqual(type(self.a._html_table).__name__, 'Tag')
+    # def test_HTMLtablesFound(self):
+    #     self.assertEqual(len(self.a._html_tables), 1)
+    #     self.assertEqual(len(self.a._html_tables[tab_name]), 46)
+    #     self.assertEqual(type(self.a._html_tables[tab_name]).__name__, 'Tag')
 
 
 #

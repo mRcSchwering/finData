@@ -8,7 +8,7 @@ from finData.boersescraper import BoerseScraper
 class DividScraper(BoerseScraper):
 
     uri = 'dividenden'
-    html_search = 'Dividenden'
+    html_search = ['Dividenden']
 
     # convert scraped names to db col names
     web2db = [
@@ -21,7 +21,12 @@ class DividScraper(BoerseScraper):
     def __init__(self, boerse_name, isin):
         BoerseScraper.__init__(self, boerse_name, isin)
         self._resolve_boerse_url(self.uri)
-        self._html_table = self._getHTMLTable(self.html_search, self._url)
+        self.data = self._getData()
+
+    def _getData(self):
+        html_tables = self._getHTMLTables(self.html_search, self._url)
+        return html_tables
+
 
     # def getTable(self, text='Dividenden'):
     #     """Scrape dividend table from boerse.de given a h3 text search string"""
