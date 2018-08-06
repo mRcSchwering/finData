@@ -22,7 +22,7 @@ class BoerseScraper(object):
         post = self._boerse_name + '/' + self._isin
         self._url = '/'.join([pre, uri, post])
 
-    def _getHTMLTables(self, search_texts, url):
+    def _getHTMLTables(self, search_texts, url, header=['h2', 'h3']):
         """
         Scrape tables from boerse.de given a list of h3 text search strings
         """
@@ -30,9 +30,9 @@ class BoerseScraper(object):
         soup = BeautifulSoup(req, 'lxml')
         tableDict = {}
         for text in search_texts:
-                h3 = soup.find(lambda tag: text in tag.text and tag.name == 'h3')
+                h = soup.find(lambda tag: text in tag.text and tag.name in header)
                 try:
-                    table = h3.findNext('table')
+                    table = h.findNext('table')
                 except AttributeError:
                     raise AttributeError('Table %s not found' % text)
                 tableDict[text] = table
@@ -161,6 +161,31 @@ class BoerseScraper(object):
             obj = guessValue(obj)
 
         return obj
+
+    @classmethod
+    def _concatTables(cls, tables):
+        keys = list(tables.keys())
+        k = 1
+        for i in range(len(tables) - 1):
+            if not tables[keys[i]]['colnames'] == tables[keys[k]]['colnames']:
+                raise AttributeError('Tables have differing columns')
+            k += 1
+        for key in tables:
+            if len(tables[key]['rownames']) != len(tables[key]['data']):
+                raise AttributeError('Rownames length and number of rows differs')
+        rownames = []
+        rows = []
+        for key in keys:
+            rownames = rownames + tables[key]['rownames']
+            rows = rows + tables[key]['data']
+        if len(rownames) != len(set(rownames)):
+            raise AttributeError('Tables have duplicate rownames')
+        table = {
+            'colnames': tables[keys[0]]['colnames'],
+            'rownames': rownames,
+            'data': rows
+        }
+        return table
 
     @classmethod
     def _table2DataFrame(cls, table, mapping, transpose=False):

@@ -1,9 +1,7 @@
 # This Python file uses the following encoding: utf-8
 from finData.boersescraper import BoerseScraper
+from finData.assets.dbColumnConversions import DBColumnConversions
 import pandas as pd
-
-
-# TODO das ganze für fund
 
 
 # ADS = ['Adidas-Aktie', 'DE000A1EWWW0']
@@ -19,16 +17,9 @@ class DividScraper(BoerseScraper):
     uri = 'dividenden'
     html_search = 'Dividenden'
 
-    # convert column names from table to DataFrame
-    columns = [
-        {'from': 'Datum', 'to': 'datum', 'type': 'other'},
-        {'from': 'Dividende', 'to': 'dividende', 'type': 'num'},
-        {'from': 'Veränderung', 'to': 'veraenderu', 'type': 'num'},
-        {'from': 'Rendite', 'to': 'rendite', 'type': 'num'}
-    ]
-
     def __init__(self, boerse_name, isin):
         BoerseScraper.__init__(self, boerse_name, isin)
+        self.columns = DBColumnConversions.dividend_yearly
         self._resolve_boerse_url(self.uri)
         self.data = self._getData()
 

@@ -110,7 +110,7 @@ class Table(object):
         Insert row by providing dict with column names
         """
         query = self._getInsertStatement()
-        keys = [k for k in row]
+        keys = list(row.keys())
         cols = [col for col in self.columns if col != self.id_column]
         if set(keys) != set(cols):
             raise ValueError('Column definitions not matching. Provided: {p}; Needed: {n}'

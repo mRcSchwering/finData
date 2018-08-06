@@ -242,6 +242,97 @@ class Table2DataFrameDefaults(unittest.TestCase):
         self.assertEqual(self.res.columns.tolist(), exp)
 
 
+class ConcatNormalTables(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tables = {
+            'tab1': {
+                'colnames': ['c1', 'c2'],
+                'rownames': ['r1', 'r2'],
+                'data': [['11', '12'], ['21', '22']]
+            },
+            'tab2': {
+                'colnames': ['c1', 'c2'],
+                'rownames': ['r3', 'r4'],
+                'data': [['31', '32'], ['41', '42']]
+            }
+        }
+        s = BoerseScraper(*dummy)
+        cls.res = s._concatTables(cls.tables)
+
+    def test_correctRownames(self):
+        rownames = self.tables['tab1']['rownames'] + self.tables['tab2']['rownames']
+        self.assertSetEqual(set(self.res['rownames']), set(rownames))
+
+    def test_correctColnames(self):
+        self.assertEqual(self.res['colnames'], self.tables['tab1']['colnames'])
+
+    def test_rownamesCorrespondToData(self):
+        i1 = self.res['rownames'].index('r1')
+        i2 = self.res['rownames'].index('r2')
+        i3 = self.res['rownames'].index('r3')
+        i4 = self.res['rownames'].index('r4')
+        self.assertEqual(self.res['data'][i1], ['11', '12'])
+        self.assertEqual(self.res['data'][i2], ['21', '22'])
+        self.assertEqual(self.res['data'][i3], ['31', '32'])
+        self.assertEqual(self.res['data'][i4], ['41', '42'])
+
+
+class ConcatTablesFailures(unittest.TestCase):
+
+    def test_unequalColnames(self):
+        tables = {
+            'tab1': {
+                'colnames': ['c1', 'c2'],
+                'rownames': ['r1', 'r2'],
+                'data': [['11', '12'], ['21', '22']]
+            },
+            'tab2': {
+                'colnames': ['c1', 'c3'],
+                'rownames': ['r3', 'r4'],
+                'data': [['31', '32'], ['41', '42']]
+            }
+        }
+        s = BoerseScraper(*dummy)
+        with self.assertRaises(AttributeError):
+                s._concatTables(tables)
+
+    def test_duplicateRownames(self):
+        tables = {
+            'tab1': {
+                'colnames': ['c1', 'c2'],
+                'rownames': ['r1', 'r1'],
+                'data': [['11', '12'], ['21', '22']]
+            },
+            'tab2': {
+                'colnames': ['c1', 'c3'],
+                'rownames': ['r3', 'r4'],
+                'data': [['31', '32'], ['41', '42']]
+            }
+        }
+        s = BoerseScraper(*dummy)
+        with self.assertRaises(AttributeError):
+                s._concatTables(tables)
+
+    def test_rowAndRownamesLengthDiffer(self):
+        tables = {
+            'tab1': {
+                'colnames': ['c1', 'c2'],
+                'rownames': ['r1', 'r2', 'r3'],
+                'data': [['11', '12'], ['21', '22']]
+            },
+            'tab2': {
+                'colnames': ['c1', 'c3'],
+                'rownames': ['r4'],
+                'data': [['31', '32'], ['41', '42']]
+            }
+        }
+        s = BoerseScraper(*dummy)
+        with self.assertRaises(AttributeError):
+                s._concatTables(tables)
+
+
 class Table2DataFrameSpecialCases(unittest.TestCase):
 
     def test_transposeTable(self):
