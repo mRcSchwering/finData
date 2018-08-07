@@ -3,24 +3,10 @@ from finData.boersescraper import BoerseScraper
 from finData.assets.dbColumnConversions import DBColumnConversions
 import pandas as pd
 
+# TODO durch fund werte gehen, gucken ob sie sinn machen
+# aktien in int? oder lieber pro 1000 in float? oder mio?
 
-# TODO das ganze für fund
-# df.index.tolist()
-#
-#
-# types = df.dtypes.tolist()
-# sum([1 for d in types if types])
-
-# ADS = ['Adidas-Aktie', 'DE000A1EWWW0']
-# fund = FundScraper(*ADS)
-# df = fund.data
-# df['zahl_aktien']
-#
-#
-# df = divid.data
-# df.to_dict(orient='records')
-# row = df.loc[[d.year == 1996 for d in df['datum']]]
-# row['rendite'].tolist()
+# TODO assets lieber als json
 
 
 class FundScraper(BoerseScraper):
@@ -44,6 +30,7 @@ class FundScraper(BoerseScraper):
             tables[key] = self._guessTypes(string_table)
         table = self._concatTables(tables)
         df = self._table2DataFrame(table, self.columns, transpose=True)
+        df['zahl_aktien'] = df['zahl_aktien'] * 10**6
         df['jahr'] = df.index.tolist()
         df['jahr'] = df['jahr'].astype(int)
         return df

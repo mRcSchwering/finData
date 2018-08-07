@@ -45,7 +45,7 @@ class ScrapeHTMLTables(unittest.TestCase):
         self.s._requestURL = MagicMock(return_value=bytes(FUND_DATA, 'utf-8'))
         search_texts = ['GuV', 'Bilanz', 'Kennzahlen', 'Rentabilität',
                         'Personal', 'Marktkapitalisierung']
-        lens = [17, 25, 20, 11, 12, 6]
+        lens = [17, 25, 22, 11, 12, 6]
         tabs = self.s._getHTMLTables(search_texts, 'url')
         self.assertEqual(len(tabs), 6)
         for i in range(len(lens)):
@@ -232,9 +232,9 @@ class Table2DataFrameDefaults(unittest.TestCase):
         self.assertEqual(self.res.shape[1], 4)
 
     def test_correctTypes(self):
-        self.assertEqual(self.res['Col3'].dtype.name, 'int64')
+        self.assertEqual(self.res['Col3'].dtype.name, 'object')
         self.assertEqual(self.res['Col2'].dtype.name, 'float64')
-        self.assertEqual(self.res['Col1'].dtype.name, 'object')
+        self.assertEqual(self.res['Col1'].dtype.name, 'int64')
         self.assertEqual(self.res['Col4'].dtype.name, 'object')
 
     def test_correctColnames(self):
@@ -355,7 +355,7 @@ class Table2DataFrameSpecialCases(unittest.TestCase):
         self.assertEqual(res.columns.tolist(), ['Row1', 'Row2', 'Row3'])
         self.assertEqual(res['Row1'].tolist(), [2009, 2010])
         self.assertEqual(res['Row2'].tolist(), [1.11, 2.22])
-        self.assertEqual(res['Row3'].tolist(), ['1.0', '2.0'])
+        self.assertEqual(res['Row3'].tolist(), [1.0, 2.0])
         self.assertEqual(res.index.tolist(), ['col1', 'col2'])
 
     def test_noRownames(self):

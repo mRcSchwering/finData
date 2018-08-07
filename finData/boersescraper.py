@@ -192,13 +192,12 @@ class BoerseScraper(object):
         """
         Convert table into DataFrame using a mapping
 
-        Mapping is list of dicts with each 'from', 'to', 'type'.
-        DataFrame columns are renamed 'from', 'to', then converted to 'type':
-        'int', 'num', 'str', 'other' (is left as is).
+        Mapping is list of dicts with each 'from' and 'to'.
+        DataFrame columns are renamed 'from', 'to'.
 
         Names not appearing in mapping are not included in dataframe.
 
-        Optional transposition happens before other conversions.
+        Optional transposition happens before mapping.
         """
         rownames = table.get('rownames')
         colnames = table.get('colnames')
@@ -213,12 +212,4 @@ class BoerseScraper(object):
             new = [c['to'] for c in mapping if c['from'] == old]
             new_colnames.append(new[0])
         df.columns = new_colnames
-        for col in df.columns:
-            types = [c['type'] for c in mapping if c['to'] == col]
-            if types[0] == 'int':
-                df[col] = df[col].astype(int)
-            if types[0] == 'num':
-                df[col] = df[col].astype(float)
-            if types[0] == 'str':
-                df[col] = df[col].astype(str)
         return df

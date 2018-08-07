@@ -1,5 +1,13 @@
 # This Python file uses the following encoding: utf-8
 
+# TODO scraper benutzen
+# df = divid.data
+# df.to_dict(orient='records')
+# row = df.loc[[d.year == 1996 for d in df['datum']]]
+# row['rendite'].tolist()
+
+# TODO alphaREST schreiben
+
 
 class Requester(object):
     """
