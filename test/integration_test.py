@@ -70,6 +70,16 @@ def main(db_name, schema_name, user, host, port, password):
     assert isinstance(adidas_id, int)
 
     _log('Checking last table updates for adidas using schema')
+
+    # debug None return issue
+    print('stock_id: %s' % adidas_id)
+    print('all stock:')
+    query = """SELECT * FROM {}.stock""".format(schema_name)
+    print(db.query(query, {}, 'all'))
+    print('all fundamental_yearly jahr, stock_id:')
+    query = """SELECT jahr, stock_id FROM {}.fundamental_yearly""".format(schema_name)
+    print(db.query(query, {}, 'all'))
+
     res = schema.table('fundamental_yearly').lastUpdate(adidas_id)
     assert res == 2017
     res = schema.table('divid_yearly').lastUpdate(adidas_id)
