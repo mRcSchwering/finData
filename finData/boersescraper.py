@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import datetime as dt
 import pandas as pd
 import requests
+import json
 import re
 
 
@@ -186,6 +187,12 @@ class BoerseScraper(object):
             'data': rows
         }
         return table
+
+    @classmethod
+    def getColumnConversions(cls, filename):
+        with open(filename) as inf:
+            obj = json.load(inf)
+        return obj
 
     @classmethod
     def _table2DataFrame(cls, table, mapping, transpose=False):

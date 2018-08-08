@@ -1,6 +1,5 @@
 # This Python file uses the following encoding: utf-8
 from finData.boersescraper import BoerseScraper
-from finData.assets.dbColumnConversions import DBColumnConversions
 import pandas as pd
 
 # TODO assets lieber als json
@@ -11,10 +10,12 @@ class FundScraper(BoerseScraper):
     uri = 'fundamental-analyse'
     html_searches = ['GuV', 'Bilanz', 'Kennzahlen', 'Rentabilität',
                      'Personal', 'Marktkapitalisierung']
+    conversions_filename = 'finData/assets/dbColumnConversions.json'
 
     def __init__(self, boerse_name, isin):
         BoerseScraper.__init__(self, boerse_name, isin)
-        self.columns = DBColumnConversions.fundamental_yearly
+        DBColumnConversions = self.getColumnConversions(self.conversions_filename)
+        self.columns = DBColumnConversions['fundamental_yearly']
         self._resolve_boerse_url(self.uri)
         self.data = self._getData()
 

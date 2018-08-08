@@ -65,5 +65,5 @@ class FundDataFrame(unittest.TestCase):
 
     def test_marktkapitaSamples(self):
         self.assertTrue(np.isnan(self.df.loc['2010', 'zahl_aktien']))
-        self.assertEqual(self.df.loc['2013', 'zahl_aktien'], 209.22 * 10**6)
-        self.assertEqual(self.df.loc['2017', 'zahl_aktien'], 203.86 * 10**6)
+        self.assertEqual(self.df.loc['2013', 'zahl_aktien'], 209.22 * 10**3)
+        self.assertEqual(self.df.loc['2017', 'zahl_aktien'], 203.86 * 10**3)
