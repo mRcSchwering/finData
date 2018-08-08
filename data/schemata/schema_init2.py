@@ -24,12 +24,12 @@ def schema_init2(schema_name, conn):
                   id          SERIAL PRIMARY KEY,
                   stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
                   jahr        INTEGER NOT NULL,
-                  umsatz      INTEGER,    -- in millionen EUR
-                  bruttoergeb INTEGER,    -- in millionen EUR
-                  EBIT        INTEGER,    -- in millionen EUR
-                  EBT         INTEGER,    -- in millionen EUR
-                  jahresueber INTEGER,    -- in millionen EUR
-                  dividendena INTEGER,    -- in millionen EUR
+                  umsatz      FLOAT,      -- in millionen EUR
+                  bruttoergeb FLOAT,      -- in millionen EUR
+                  EBIT        FLOAT,      -- in millionen EUR
+                  EBT         FLOAT,      -- in millionen EUR
+                  jahresueber FLOAT,      -- in millionen EUR
+                  dividendena FLOAT,      -- in millionen EUR
                   umlaufvermo FLOAT,      -- in millionen EUR
                   anlagevermo FLOAT,      -- in millionen EUR
                   sum_aktiva  FLOAT,      -- in millionen EUR
@@ -38,26 +38,26 @@ def schema_init2(schema_name, conn):
                   gesamt_verb FLOAT,      -- in millionen EUR
                   eigenkapita FLOAT,      -- in millionen EUR
                   sum_passiva FLOAT,      -- in millionen EUR
-                  eigen_quote DECIMAL(5, 2), -- in percent
-                  fremd_quote DECIMAL(5, 2), -- in percent
-                  gewinn_verw DECIMAL(5,2),  -- je Aktie
-                  gewinn_unvw DECIMAL(5,2),  -- je Aktie
-                  umsatz_a    DECIMAL(5,2),  -- je Aktie
-                  buchwert    DECIMAL(5,2),  -- je Aktie
-                  dividende   DECIMAL(5,2),  -- je Aktie
-                  KGV         DECIMAL(5,2),  -- Kurs-Gewinn-Verh
-                  KBV         DECIMAL(5,2),  -- Kurs-Buchwert-Verh
-                  KUV         DECIMAL(5,2),  -- Kurs-Umsatz-Verh
-                  umsatzren   DECIMAL(5,2),  -- in percent
-                  eigenkapren DECIMAL(5,2),  -- in percent
-                  geskapren   DECIMAL(5,2),  -- in percent
-                  dividren    DECIMAL(5,2),  -- in percent
-                  personal    INTEGER,       -- am Jahresende
-                  pers_aufw   FLOAT,         -- Personalaufwand in Mio
-                  umsatz_m    FLOAT,         -- je Mitarbeiter
-                  gewinn_m    FLOAT,         -- je Mitarbeiter
-                  zahl_aktien INTEGER,
-                  marktkapita FLOAT   -- in Mio Euro
+                  eigen_quote FLOAT,      -- in percent
+                  fremd_quote FLOAT,      -- in percent
+                  gewinn_verw FLOAT,      -- je Aktie
+                  gewinn_unvw FLOAT,      -- je Aktie
+                  umsatz_a    FLOAT,      -- je Aktie
+                  buchwert    FLOAT,      -- je Aktie
+                  dividende   FLOAT,      -- je Aktie
+                  KGV         FLOAT,      -- Kurs-Gewinn-Verh
+                  KBV         FLOAT,      -- Kurs-Buchwert-Verh
+                  KUV         FLOAT,      -- Kurs-Umsatz-Verh
+                  umsatzren   FLOAT,      -- in percent
+                  eigenkapren FLOAT,      -- in percent
+                  geskapren   FLOAT,      -- in percent
+                  dividren    FLOAT,      -- in percent
+                  personal    INTEGER,    -- am Jahresende
+                  pers_aufw   FLOAT,      -- Personalaufwand in Mio
+                  umsatz_m    FLOAT,      -- je Mitarbeiter
+                  gewinn_m    FLOAT,      -- je Mitarbeiter
+                  zahl_aktien FLOAT,      --in thousands
+                  marktkapita FLOAT       -- in Mio Euro
                 );
             """, {'schema_name': AsIs(schema_name)})
 
@@ -66,9 +66,9 @@ def schema_init2(schema_name, conn):
                   id          SERIAL PRIMARY KEY,
                   stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
                   datum       DATE NOT NULL,
-                  dividende   DECIMAL(5, 2),
-                  veraenderu  DECIMAL(5, 2),   -- in percent
-                  rendite     DECIMAL(5, 2)    -- in percent
+                  dividende   FLOAT,
+                  veraenderu  FLOAT,     -- in percent
+                  rendite     FLOAT      -- in percent
                 );
             """, {'schema_name': AsIs(schema_name)})
 
@@ -77,13 +77,13 @@ def schema_init2(schema_name, conn):
                   id          SERIAL PRIMARY KEY,
                   stock_id    INTEGER REFERENCES %(schema_name)s.stock ( id ),
                   datum       DATE NOT NULL,
-                  open        DECIMAL(7, 2),
-                  high        DECIMAL(7, 2),
-                  low         DECIMAL(7, 2),
-                  close       DECIMAL(7, 2),
-                  adj_close   DECIMAL(7, 2),
+                  open        FLOAT,
+                  high        FLOAT,
+                  low         FLOAT,
+                  close       FLOAT,
+                  adj_close   FLOAT,
                   volume      INTEGER,
-                  divid_amt   DECIMAL(5, 2),
-                  split_coef  DECIMAL(5, 2)
+                  divid_amt   FLOAT,
+                  split_coef  FLOAT
                 );
             """, {'schema_name': AsIs(schema_name)})
