@@ -18,15 +18,19 @@ class RequesterSetup(unittest.TestCase):
 
     def test_fund(self):
         self.tab.name = 'fundamental_yearly'
-        self.req.table(self.tab, self.hist)
-        self.assertEqual(self.req.data, 'fund')
+        with patch('finData.requester.Requester._getFundData') as scraper:
+            scraper.return_value = 'fund'
+            res = self.req.table(self.tab, self.hist)
+        self.assertEqual(res, 'fund')
 
     def test_divid(self):
         self.tab.name = 'divid_yearly'
-        self.req.table(self.tab, self.hist)
-        self.assertEqual(self.req.data, 'divid')
+        with patch('finData.requester.Requester._getDividData') as scraper:
+            scraper.return_value = 'divid'
+            res = self.req.table(self.tab, self.hist)
+        self.assertEqual(res, 'divid')
 
     def test_hist(self):
         self.tab.name = 'hist_daily'
-        self.req.table(self.tab, self.hist)
-        self.assertEqual(self.req.data, 'hist')
+        res = self.req.table(self.tab, self.hist)
+        self.assertEqual(res, 'hist')

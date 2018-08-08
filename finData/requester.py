@@ -1,4 +1,6 @@
 # This Python file uses the following encoding: utf-8
+from finData.dividscraper import DividScraper
+from finData.fundscraper import FundScraper
 
 # TODO scraper benutzen
 # df = divid.data
@@ -20,22 +22,18 @@ class Requester(object):
     def table(self, table, history):
         self._table = table
         self._history = history
-        self.data = self._getData()
-
-    def _getData(self):
         if self._table.name == 'fundamental_yearly':
-            return self._getFund()
+            return self._getFundData()
         if self._table.name == 'divid_yearly':
-            return self._getDivid()
+            return self._getDividData()
         if self._table.name == 'hist_daily':
-            return self._getHist()
-        raise AttributeError("Requester doesn't know table %s" % self._table.name)
+            return 'hist'
+        raise AttributeError("Requester wasn't able to get table %s" % self._table.name)
 
-    def _getFund(self):
-        return 'fund'
+    def _getDividData(self):
+        obj = DividScraper(self._stock.boerse_name, self._stock.boerse_name)
+        return obj.data
 
-    def _getDivid(self):
-        return 'divid'
-
-    def _getHist(self):
-        return 'hist'
+    def _getFundData(self):
+        obj = FundScraper(self._stock.boerse_name, self._stock.boerse_name)
+        return obj.data
