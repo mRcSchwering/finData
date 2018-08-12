@@ -1,5 +1,5 @@
 # This Python file uses the following encoding: utf-8
-from finData.alphavantageAPI import AlphavantagAPI
+from finData.alphavantageapi import AlphavantagAPI
 import pandas as pd
 
 
