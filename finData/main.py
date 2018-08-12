@@ -13,10 +13,6 @@ import argparse
 # TODO 'AlphaREST' Klasse implementieren
 # TODO 'REST' Basisklasse implementieren
 
-# TODO 'BoerseScraper' Klasse implementieren
-# TODO 'Scraper' Basisklasse implementieren
-
-# TODO FindataFacade und main mit Klassen implementieren
 # TODO integration tests damit
 # TODO alten code löschen
 
