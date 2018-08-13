@@ -5,10 +5,6 @@ import pandas as pd
 import json
 
 
-with open('finData/testdata/hist.json') as inf:
-    TESTDATA = json.load(inf)
-
-
 def mockAPI(response):
 
     class MockedAPI(AlphavantagAPI):

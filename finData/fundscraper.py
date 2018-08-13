@@ -2,8 +2,6 @@
 from finData.boersescraper import BoerseScraper
 import pandas as pd
 
-# TODO assets lieber als json
-
 
 class FundScraper(BoerseScraper):
 

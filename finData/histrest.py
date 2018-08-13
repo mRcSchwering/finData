@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 from finData.alphavantageapi import AlphavantagAPI
 import pandas as pd
+import datetime as dt
 
 
 class HistRest(AlphavantagAPI):
@@ -25,6 +26,9 @@ class HistRest(AlphavantagAPI):
         data = self._request(query)
         df = pd.DataFrame \
             .from_dict(data['Time Series (Daily)'], orient='index', dtype=float)
-        df_reshaped = self._reshape(df)
-        df_reshaped['datum'] = df_reshaped.index
-        return df_reshaped
+        df = self._reshape(df, self.columns)
+        dates = []
+        for dateStr in df.index.tolist():
+            dates.append(dt.datetime.strptime(dateStr, '%Y-%m-%d').date())
+        df['datum'] = dates
+        return df

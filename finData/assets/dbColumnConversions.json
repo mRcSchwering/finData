@@ -50,5 +50,5 @@
         {"from": "6. volume", "to": "volume"},
         {"from": "7. dividend amount", "to": "divid_amt"},
         {"from": "8. split coefficient", "to": "split_coef"}
-    ],
+    ]
 }
