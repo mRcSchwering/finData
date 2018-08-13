@@ -40,5 +40,15 @@
         {"from": "Summe Passiva", "to": "sum_passiva"},
         {"from": "Eigenkapitalquote", "to": "eigen_quote"},
         {"from": "Fremdkapitalquote", "to": "fremd_quote"}
-    ]
+    ],
+    "hist_daily": [
+        {"from": "1. open", "to": "open"},
+        {"from": "2. high", "to": "high"},
+        {"from": "3. low", "to": "low"},
+        {"from": "4. close", "to": "close"},
+        {"from": "5. adjusted close", "to": "adj_close"},
+        {"from": "6. volume", "to": "volume"},
+        {"from": "7. dividend amount", "to": "divid_amt"},
+        {"from": "8. split coefficient", "to": "split_coef"}
+    ],
 }

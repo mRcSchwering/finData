@@ -5,8 +5,12 @@ import pandas as pd
 
 class HistRest(AlphavantagAPI):
 
+    _conversions_filename = 'finData/assets/dbColumnConversions.json'
+
     def __init__(self, ticker, days_missing):
-        AlphavantagAPI.__init__(self, boerse_name, isin)
+        AlphavantagAPI.__init__(self)
+        DBColumnConversions = self.getColumnConversions(self._conversions_filename)
+        self.columns = DBColumnConversions['hist_daily']
         self.data = self._getData(ticker, days_missing)
 
     def _getData(self, ticker, days_missing):
@@ -18,5 +22,9 @@ class HistRest(AlphavantagAPI):
             'symbol': ticker,
             'outputsize': 'compact' if days_missing <= 100 else 'full'
         }
-        df = self._request(query)
-        self.data = self._reshape(df)
+        data = self._request(query)
+        df = pd.DataFrame \
+            .from_dict(data['Time Series (Daily)'], orient='index', dtype=float)
+        df_reshaped = self._reshape(df)
+        df_reshaped['datum'] = df_reshaped.index
+        return df_reshaped

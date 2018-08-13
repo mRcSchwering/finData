@@ -395,21 +395,3 @@ class Table2DataFrameSpecialCases(unittest.TestCase):
         self.assertEqual(res['Row1'].tolist(), [2009, 2010])
         self.assertEqual(res['Row2'].tolist(), [1.11, 2.22])
         self.assertEqual(res.index.tolist(), [0, 1])
-
-#
-# class HTMLtab2dict(unittest.TestCase):
-#
-#     def setUp(self):
-#         self.s = BoerseScraper(*dummy)
-#         with open('finData/testdata/divid.html') as inf:
-#             testdata = inf.read()
-#         self.s._requestURL = MagicMock(return_value=bytes(testdata, 'utf-8'))
-#
-#     def test_searchTextFound(self):
-#         tab = self.s._getHTMLTable('Dividenden', 'url')
-#         self.assertEqual(len(tab), 46)
-#         self.assertEqual(type(tab).__name__, 'Tag')
-#
-#     def test_searchTextNotFound(self):
-#         with self.assertRaises(AttributeError):
-#             self.s._getHTMLTable('asd', 'url')
